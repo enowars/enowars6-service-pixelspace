@@ -1,0 +1,22 @@
+{% csrf_token %}
+<h1>Shoppage</h1>
+{% if user.is_authenticated %}
+    <p>Welcome, {{ user.get_username }}. Thanks for logging in. Your Balance : {{ user.profile.balance }}</p>
+    <p><a href="../user_items">My items</a></p>
+{% else %}
+    <p>Welcome, new user. Please log in.</p>
+{% endif %}
+{% if shop_items %}
+There are {{shop_items|length}} objects in the shop:
+<br>
+{% for s in shop_items %}
+<br>
+<td><h4>{{ s.item.name }}</h4></td><br>
+<td><img src="{{ s.item.data.url }}"/></td><br>
+<td>{{ s.price }}</td><br>
+<td>{{ s.description }}</td><br>
+<td><a href="{{s.pk}}">View item</a></td><br>
+<td>{{ s.sold }} of {{ s.available_units }} sold</td><br>
+<br>
+{% endfor %}
+{% endif %}

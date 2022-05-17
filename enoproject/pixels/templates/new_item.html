@@ -1,0 +1,10 @@
+{% block content %}
+  <h2>NEW ITEM</h2>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    Itemname: {{form.name}}<br>
+    License: {{form.cert_licencse}}<br>
+    Data:    {{form.data}}<br>
+    <button type="submit">Create</button>
+  </form>
+{% endblock %}

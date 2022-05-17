@@ -1,0 +1,11 @@
+{% block content %}
+  <h2>ENLIST ITEM</h2>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    
+    <td>Price:    {{form.price}}</td><br>
+    <td>Description: {{form.description}}</td><br>
+    <td>Units: {{form.available_units}}</td><br>
+    <button type="submit">Enlist</button>
+  </form>
+{% endblock %}

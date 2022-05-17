@@ -1,0 +1,16 @@
+{% block title %}Login{% endblock %}
+
+{% block content %}
+{% if user.is_authenticated %}
+  Hi {{ user.username }}!
+{% else %}
+  <p>You are not logged in</p>
+{% endif %}
+<h2>Log In</h2>
+<form method="post">
+  {% csrf_token %}
+  username {{ form.username }} <br>
+  password {{ form.password }} <br>
+  <button type="submit">Log In</button>
+</form>
+{% endblock %}
