@@ -18,7 +18,8 @@ urlpatterns = [
     path('shop/<int:item_id>/',views.item,name="itemPage"),
     path('shop/purchase/<int:item_id>/',views.purchase,name="purchasePage"),
 
-    path('user_items/',views.user_items,name='items-'),
+    path('user_items/',views.user_items,name='items'),
+    path('user_items/<int:item_id>',views.item_page,name='itemDetails'),
     path('user_items/enlist/<int:item_id>',views.create_listing,name='listing'),
     path('new_item/',views.create_item,name='createItem'),
     

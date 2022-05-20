@@ -1,0 +1,53 @@
+version: "3.9"
+   
+services:
+  db:
+    container_name: Pixelspace_db
+    image: postgres
+    volumes:
+      - ./enoproject/data/db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    networks:
+      - vuln
+      
+  web:
+    container_name: Pixelspace
+    build: ./enoproject/
+    command: sh -c 'python3 enoproject/manage.py runserver 0.0.0.0:8010'
+
+    volumes:
+      - .:/code
+    ports:
+      - "8010:8010"
+    environment:
+      - POSTGRES_NAME=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    depends_on:
+      - db
+     networks:
+      - vuln
+
+  checker:
+    container_name: Pixelspace_checker
+    build: ./checker/
+    command: sh -c 'uvicorn --reload main:checker.app'
+    ports:
+      - "4243:8000"
+    environment:
+    - MONGO_ENABLED=1
+    - MONGO_HOST=pixelspace_checker_db
+    - MONGO_PORT=27017
+    - MONGO_USER=root 
+    - MONGO_PASSWORD=root
+    logging:
+      driver: none
+    networks:
+      - vuln
+
+  networks:
+    vuln:
+      external: true

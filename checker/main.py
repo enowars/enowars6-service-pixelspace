@@ -1,72 +1,60 @@
-import sys
-import requests
-import random
-import string
+import secrets
+from typing import Optional
+from httpx import AsyncClient
+from util import Session
 
-def get_csrf_token(cli_session) -> str:
-    if 'csrftoken' in cli_session.cookies:
-        return cli_session.cookies['csrftoken']
-    return cli_session.cookies['csrf']
+from enochecker3 import(
+    ChainDB,
+    Enochecker,
+    GetflagCheckerTaskMessage,
+    MumbleException,
+    PutflagCheckerTaskMessage,
+)
 
-def get_random_string(length):
-    return ''.join(random.choice(string.ascii_lowercase) for i in range(length))
+from enochecker3.utils import FlagSearcher, assert_equals, assert_in
 
+checker = Enochecker("PixelSpaceChecker",8010)
 
-def get_username_option(string: str) -> int:
-    return 1
+@checker.putflag(0)
+async def putflag_test(task: PutflagCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
+    token = secrets.token_hex(32)
+    item_name = 'py_req_item14'
+    username = 'snuhrhlm'
+    password = 'yohxzzvrtqgkqufz1'
 
-def login(username: str, password:str):
-    URL = 'http://0.0.0.0:8010/login/'
+    session = Session(user=username,password=password)
+    session.login()
 
-    client = requests.session()
+    r = session.create_item(data_path='/home/alex/Downloads/tests/frog.png',item_name=item_name,sign_value="ENO{TESTFLAG_STRING_VALUE}")
+    assert_equals(r.status_code,200,"FLAG_STORE_1: Could not create Flagstore item!")
 
-    # Retrieve the CSRF token first
-    client.get(URL)  # sets cookie
-    csrftoken = get_csrf_token(client)
+    r = session.enlist_item(item_name='py_req_item14')
+    assert_equals(r.status_code,200,"FLAG_STORE 1: Could not enlist Flagstore item!")
+    #await db.set("token",token)
+    await db.set("license_flag",{'flag':token,'user':username,'password':password,'item':item_name})
 
-    login_data = dict(username=username, password=password, csrfmiddlewaretoken=csrftoken, next='shop/')
-    r = client.post(URL, data=login_data, headers=dict(Referer=URL))
-    print(f"LOGIN: <POST> {r.status_code}" )
+@checker.getflag(0)
+async def getflag_test(task: GetflagCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
+    try:
+        #token = await db.get("token")
+        value_dict = await db.get("license_flag")
+    except KeyError:
+        raise MumbleException("Missing database entry from FLAG_STORE 1")
 
-    r_i = client.get('http://0.0.0.0:8010/user_items/')
-    csrftoken = get_csrf_token(client)
-    print(f"USER_ITEMS: <GET> {r_i.status_code}")
+    session = Session(user=value_dict['user'],password=value_dict['password'])
+    session.login()
+    r = session.get_license(item_name=value_dict['item'])
 
-    r_i = client.get('http://0.0.0.0:8010/new_item/')
-    csrftoken = get_csrf_token(client)
-    print(f"CREATE_ITEM: <GET> {r_i.status_code}" )
-   
-   
-    files = {'data':open('/home/alex/Downloads/tests/frog.png','rb'),'cert_licencse':open('/home/alex/Downloads/tests/license.txt','rb')}
-    create_item_headers = dict(name="python_request_item", data=files['data'],cert_licencse=files['cert_licencse'],csrfmiddlewaretoken=csrftoken)
+    assert_equals(r.status_code, 200,"FLAG_STORE 1: Retrieving license flag failed!")
+    assert_in(task.flag, r.text, "FLAG_STORE 1: Flag not found in license.txt!")
 
-    r_i = client.post("http://0.0.0.0:8010/new_item/",data=create_item_headers,files=files)
+@checker.exploit(0)
+async def exploit_test(searcher: FlagSearcher, client: AsyncClient) -> Optional[str]:
+    #*
+    #   Exploit_1 here
+    # *#
+    r = 0
+    if flag:= searcher.search_flag(r.text):
+        return flag
 
-    print(f"CREATE_ITEM: <POST> {r_i.status_code}" )
-    if r_i.status_code not in [200,201]:
-        print(r_i.text)
-
-
-
-
-def signup() ->  dict:
-    username = get_random_string(8)
-    password = get_random_string(16) + "1"
-
-    URL = 'http://0.0.0.0:8010/signup/'
-
-    client = requests.session()
-
-    client.get(URL)  # sets cookie
-  
-    csrftoken = get_csrf_token(client)
-
-    login_data = dict(username=username, password1=password,password2=password, csrfmiddlewaretoken=csrftoken, next='shop/')
-    r = client.post(URL, data=login_data, headers=dict(Referer=URL))
-    print(r.status_code)
-    return [username,password]
-
-credentials = signup()
-print(credentials)
-login(username=credentials[0],password=credentials[1])
-
+    

@@ -14,6 +14,7 @@ You have {{user_items|length}} uploaded objects:<br><br>
 <img src="{{s.data.url}}"><br>
 <td>{{ s.name }}</td><br>
 <td><a href="enlist/{{s.pk}}">Enlist item</a></td><br>
+<td><a href="{{s.pk}}">View Item</a></td><br>
 
 {% endfor %}
 {% endif %}
@@ -25,8 +26,8 @@ You have {{user_listings|length}} enlisted objects:<br><br>
 {% for s in user_listings %}
 <td>Name: {{ s.item.name }}</td><br>
 <td>Price: {{ s.price }}</td><br>
-<td>Sold: {{ s.sold }}/{{ s.available_units }}</td><br>
-<td><a href="{{s.pk}}">View item</a></td>
+<td>Sold: {{ s.sold }}</td><br>
+<td><a href="{{s.item.pk}}">View item</a></td>
 
 {% endfor %}
 {% endif %}

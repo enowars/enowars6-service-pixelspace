@@ -38,7 +38,6 @@ class ShopListing(models.Model):
     price = models.FloatField(validators=[MinValueValidator(0.0),MaxValueValidator(1000000000)])
     description = models.CharField(max_length=300)
     sold = models.IntegerField(validators=[MinValueValidator(0),MaxValueValidator(100)],default=0)
-    available_units = models.IntegerField(validators=[MinValueValidator(1),MaxValueValidator(100)])
 
 
 

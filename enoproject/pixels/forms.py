@@ -11,4 +11,4 @@ class ShopItemForm(forms.ModelForm):
 class ShopListingForm(forms.ModelForm):
     class Meta:
         model = ShopListing
-        fields = ['price','description','available_units']
+        fields = ['price','description']

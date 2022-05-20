@@ -90,6 +90,13 @@ def item(request,item_id):
 def create_item(request):
     if request.method == 'POST':
         form = ShopItemForm(request.POST,request.FILES,request.user)
+        print(f"CREATE_ITEM_FORM_FROM_REQUESTS:\n")
+        
+        print(form.data)
+        print(form.files)
+        print(form.is_valid())
+        print(form.errors)
+        
         if form.is_valid():            
             obj = form.save(commit=False)
             obj.user = request.user
@@ -118,11 +125,10 @@ def create_listing(request,item_id):
             obj.description = form.cleaned_data.get('description')
             obj.buyers = "0="
             obj.sold = 0
-            obj.available_units = form.cleaned_data.get('available_units')
             obj.save()
             return redirect('shop')
     else:
-        form = ShopListingForm(),
+        form = ShopListingForm()
     return render(request, 'enlist_item.html', {'form': form,'user_item':ShopItem.objects.get(pk=item_id)})
 
 def purchase(request,item_id):
@@ -136,3 +142,6 @@ def purchase(request,item_id):
         set_buyer(buyer,item.item.name)
         return redirect('shop')
     return redirect('shop')
+
+def item_page(request,item_id):
+    return render(request, 'item_details.html', {'item': ShopItem.objects.get(pk=item_id)})
