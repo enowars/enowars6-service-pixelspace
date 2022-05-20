@@ -3,19 +3,24 @@ version: "3"
 services:
   pixelspace-checker:
     container_name: pixelspace-checker
-    build: .
-    command: bash -c 'uvicorn example:checker.app'
+    build:
+      context: .
+      network: host      
+    #command: bash -c 'uvicorn --port 8010 example:checker.app'
+    volumes:
+      - .:/code
     ports:
-      - 8000:8000
+      - "8000:8000"
     environment:
-    - MONGO_ENABLED=1
-    - MONGO_HOST=pixelspace-checker-db
-    - MONGO_PORT=27017
-    - MONGO_USER=root 
-    - MONGO_PASSWORD=root
-    logging:
-      driver: none
-
+      - MONGO_ENABLED=1
+      - MONGO_HOST=pixelspace-checker-db
+      - MONGO_PORT=27017
+      - MONGO_USER=root 
+      - MONGO_PASSWORD=root
+ #   logging:
+ #     driver: none
+    networks:
+      - vuln
 
   pixelspace-checker-db:
     image: mongo
@@ -24,11 +29,14 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: root  
       MONGO_INITDB_ROOT_PASSWORD: root
-    logging:
-      driver: none
-
+#    logging:
+#     driver: none
+    networks:
+      - vuln
 
 volumes:
   pixelspace-checker-db:
  
+networks:
+  vuln:
   

@@ -6,7 +6,7 @@ import string
 from typing import Optional
 import tempfile
 
-HOST = "http://0.0.0.0:8010/"
+HOST = "http://Pixelspace_service:8010/"
 
 def get_random_string(length):
     return ''.join(random.choice(string.ascii_lowercase) for i in range(length))
@@ -18,12 +18,20 @@ class Session:
     password:str
     csrf_token:str
 
-    def __init__(self,user="usr",password="pass"):
+    def __init__(self,user="usr",password="pass",address="0.0.0.0",port="8010"):
         self.user = user
         self.password = password
         self.session = requests.Session()
         self.csrf_token = ''
+        global HOST
+        HOST = f"http://{address}:{port}/"
     
+    def authenticate(self,):
+        if self.user != "usr" or self.password != "pass":
+            return self.login()
+        else:
+            return self.signup()
+
     def refresh_token(self,):
         if 'csrftoken' in self.session.cookies:
             self.csrf_token = self.session.cookies['csrftoken']
@@ -51,20 +59,17 @@ class Session:
             }
         
         fd, path = tempfile.mkstemp()
-        try:
-            with os.fdopen(fd,'wb+') as tmp:
-                tmp.write(str.encode(self.license_from_template(sign_value)))
-                tmp.close()
-            files = [
-                ('cert_licencse',('license.txt',open(path,'rb'),'text/plain')),
-                ('data',(data_name,open(data_path,'rb'),data_type))
-            ]
+       
+        with os.fdopen(fd,'wb+') as tmp:
+            tmp.write(str.encode(self.license_from_template(sign_value)))
+            tmp.close()
+        files = [
+            ('cert_licencse',('license.txt',open(path,'rb'),'text/plain')),
+            ('data',(data_name,open(data_path,'rb'),data_type))
+        ]
 
-    
-            response = self.session.post(url=URL,data=data,files=files)
-        finally:
-            os.remove(path)
-        return response.status_code
+        return self.session.post(url=URL,data=data,files=files)
+
         
     def login(self,) -> str:
         if self.user == "usr" or self.password == "pass":
@@ -85,7 +90,7 @@ class Session:
         }
 
         response = self.session.post(URL,data=data,headers=headers)
-        return response.status_code
+        return response
     
     def signup(self,) -> str:
         if self.user != "usr" or self.password != "pass":
@@ -128,9 +133,8 @@ class Session:
             'csrfmiddlewaretoken':self.csrf_token,
             'next':'shop/'
             }
-         
-        r = self.session.post(url=HOST + f'user_items/enlist/{item_id}',data=form_data)
-        return r.status_code
+        
+        return self.session.post(url=HOST + f'user_items/enlist/{item_id}',data=form_data)
     
         
     def license_from_template(self, sign_value: str) -> str:
@@ -180,16 +184,3 @@ class Session:
             print("ITEM WAS EITHER NOT SUBMITTED BY THIS USER OR GOT DELETED!")
             exit(0)
         return item_id
-
-def run():
-    client = Session(user='snuhrhlm',password='yohxzzvrtqgkqufz1')
-    client.login()
-    #client.create_item(data_path='/home/alex/Downloads/tests/frog.png',item_name='py_req_item14',sign_value="ENO{TESTFLAG_STRING_VALUE}")
-    #client.enlist_item(item_name='py_req_item14')
-    text = client.get_license('py_req_item14')    
-    print(text)
-
-
-
-if __name__ == "__main__":
-    run()

@@ -1,0 +1,36 @@
+version: "3.9"
+   
+services:
+  db:
+    container_name: Pixelspace_service_db
+    image: postgres
+    volumes:
+      - /data/db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    networks:
+      - vuln    
+  
+  web:
+    container_name: Pixelspace_service
+    build: 
+      context: .
+    command: sh -c 'python3 manage.py runserver 0.0.0.0:8010'
+
+    volumes:
+      - .:/code
+    ports:
+      - "8010:8010"
+    environment:
+      - POSTGRES_NAME=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    depends_on:
+      - db
+    networks:
+      - vuln
+
+networks:
+  vuln:
