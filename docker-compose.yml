@@ -5,7 +5,7 @@ services:
     container_name: Pixelspace_db
     image: postgres
     volumes:
-      - /enoproject/data/db:/var/lib/postgresql/data
+      - /service/data/db:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=postgres
       - POSTGRES_USER=postgres
@@ -16,8 +16,9 @@ services:
   pixelspace_web:
     container_name: Pixelspace
     build: 
-      context: ./enoproject/
-    command: sh -c 'python3 enoproject/manage.py runserver 0.0.0.0:8010'
+      context: ./service/
+    command: sh -c 'python3 enoproject/manage.py makemigrations; python3 enoproject/manage.py migrate; python3 enoproject/manage.py runserver 0.0.0.0:8010'
+    
     
     volumes:
       - .:/code

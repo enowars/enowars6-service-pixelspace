@@ -18,7 +18,7 @@ def app(): return checker.app
 
 @checker.putflag(0)
 async def putflag_test(task: PutflagCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:    
-    item_name = 'py_req_item14'
+    item_name = 'py_req_item15'
     username = 'snuhrhlm'
     password = 'yohxzzvrtqgkqufz1'
 
