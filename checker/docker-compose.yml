@@ -2,7 +2,7 @@ version: "3.3"
 
 services:
   pixelspace-checker:
-    container_name: pixelspace-checker
+    container_name: Pixelspace-checker
     build:
       context: .
 #      network: host      
@@ -23,6 +23,7 @@ services:
  #     - vuln
 
   pixelspace-checker-db:
+    container_name: Pixelspace-checker_db
     image: mongo
     volumes:
       - pixelspace-checker-db:/data/db

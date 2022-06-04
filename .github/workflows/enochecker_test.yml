@@ -14,7 +14,8 @@ jobs:
   build:
     runs-on: self-hosted
     env:
-      ENOCHECKER_TEST_CHECKER_ADDRESS: localhost
+      ENOCHECKER_TEST_SERVICE_ADDRESS: 172.17.0.1
+      ENOCHECKER_TEST_CHECKER_ADDRESS: 172.17.0.1
       ENOCHECKER_TEST_CHECKER_PORT: 8000
 
     steps:

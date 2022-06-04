@@ -6,10 +6,8 @@ from util import Session
 from enochecker3 import(
     ChainDB,
     Enochecker,
-    EnoLogMessage,
 
     MumbleException,
-    OffineException,
     InternalErrorException,
 
     #FLAG-Message-Tasks

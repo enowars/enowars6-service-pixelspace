@@ -6,4 +6,4 @@ RUN pip3 install -r requirements.txt
 COPY . .
 WORKDIR .
 
-ENTRYPOINT [ "gunicorn", "-c", "gunicorn.conf.py", "checker:app" ]
+ENTRYPOINT [ "gunicorn", "-c","--factory", "gunicorn.conf.py", "checker:app" ]
