@@ -30,7 +30,7 @@ end
 # Unset irrelevant variables.
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV "/home/alex/Desktop/CTF-Service/enoproject/pixelspace-env"
+set -gx VIRTUAL_ENV "/home/alex/Desktop/CTF-Service/service/pixelspace-env"
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/bin" $PATH

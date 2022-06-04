@@ -39,3 +39,4 @@ volumes:
  
 networks:
   vuln:
+    external: True
