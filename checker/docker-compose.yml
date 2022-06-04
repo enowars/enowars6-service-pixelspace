@@ -5,7 +5,7 @@ services:
     container_name: pixelspace-checker
     build:
       context: .
-      network: host      
+#      network: host      
     #command: bash -c 'uvicorn --port 8010 example:checker.app'
     volumes:
       - .:/code
