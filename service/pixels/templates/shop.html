@@ -1,10 +1,11 @@
 {% csrf_token %}
 <h1>Shoppage</h1>
+<a href="../">Home</a>
 {% if user.is_authenticated %}
     <p>Welcome, {{ user.get_username }}. Thanks for logging in. Your Balance : {{ user.profile.balance }}</p>
     <p><a href="../user_items">My items</a></p>
 {% else %}
-    <p>Welcome, new user. Please log in.</p>
+    <p>Welcome, new user. Please <a href="../login">log in.</a> </p>
 {% endif %}
 {% if shop_items %}
 There are {{shop_items|length}} objects in the shop:

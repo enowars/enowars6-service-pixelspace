@@ -33,3 +33,4 @@ services:
 
 networks:
   vuln:
+    external: True

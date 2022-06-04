@@ -90,15 +90,16 @@ WSGI_APPLICATION = 'pixelspace.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': "django.db.backends.postgresql",
-        'NAME': os.environ.get('POSTGRES_NAME'),
-        'USER': os.environ.get('POSTGRES_USER'),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
-        'HOST': "pixelspace_db",
-        'PORT': 5432,
+        'ENGINE': os.environ.get('TEST_ENGINE'),
+        'NAME': os.environ.get('TEST_NAME'),
+        'USER': os.environ.get('TEST_USER'),
+        'PASSWORD': os.environ.get('TEST_PASSWORD'),
+        'HOST': os.environ.get('TEST_HOST'),
+        'PORT': int(os.environ.get('TEST_DB_PORT')),
+       
     },
     'test': {
-        'ENGINE': "django.db.backends.postgresql",
+        'ENGINE': os.environ.get('TEST_ENGINE'),
         'NAME': os.environ.get('TEST_NAME'),
         'USER': os.environ.get('TEST_USER'),
         'PASSWORD': os.environ.get('TEST_PASSWORD'),

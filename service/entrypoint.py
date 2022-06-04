@@ -5,17 +5,20 @@ import time
 PRODUCTION = True
 
 
+#setup test db data
+os.environ['TEST_ENGINE'] = "django.db.backends.postgresql"
+os.environ['TEST_NAME'] = os.environ.get('POSTGRES_NAME')
+os.environ['TEST_USER'] = os.environ.get('POSTGRES_USER')
+os.environ['TEST_PASSWORD'] = os.environ.get('POSTGRES_PASSWORD')
+os.environ['TEST_HOST'] = "pixelspace_db"
+os.environ['TEST_DB_PORT'] = "5432"
+
 #Migrate django application if needed
 print("\n\nCHECKING FOR DATABASE CHANGES\n\n")
 os.system("python3 manage.py makemigrations")
 os.system("python3 manage.py migrate")
 
-#setup test db data
-os.environ['TEST_NAME'] = "test_db"
-os.environ['TEST_USER'] = "test_db_user"
-os.environ['TEST_PASSWORD'] = "test_db_password"
-os.environ['TEST_HOST'] = "test_db_host"
-os.environ['TEST_DB_PORT'] = "2022"
+
 
 
 if PRODUCTION:
