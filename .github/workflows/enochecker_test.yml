@@ -30,7 +30,8 @@ jobs:
     - name: start service
       run: |
         cd service
-        docker-compose up -d
+        docker-compose build
+        docker-compose up
     - name: start checker
       run: |
         cd checker
