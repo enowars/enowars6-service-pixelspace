@@ -31,10 +31,11 @@ jobs:
       run: |
         cd service
         docker-compose build
-        docker-compose up
+        docker-compose up -d
     - name: start checker
       run: |
         cd checker
+        docker-compose build
         docker-compose up -d
     - name: obtain Docker host IP
       run: |
