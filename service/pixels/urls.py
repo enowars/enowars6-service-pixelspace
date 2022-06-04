@@ -10,8 +10,7 @@ urlpatterns = [
     path('signup/',views.signup,name='create_account'),
     path('login/',views.login_page,name='login'),
     path('logout/',views.logout_page,name='logout'),
-    path('seed/',views.server_seed, name='serv_seed'),
-
+    
     path('shop/',views.shop,name='shop'),
     path('shop/<int:item_id>/',views.item,name="itemPage"),
     path('shop/purchase/<int:item_id>/',views.purchase,name="purchasePage"),
@@ -19,7 +18,12 @@ urlpatterns = [
     path('user_items/',views.user_items,name='items'),
     path('user_items/<int:item_id>',views.item_page,name='itemDetails'),
     path('user_items/enlist/<int:item_id>',views.create_listing,name='listing'),
+    path('user_items/review/<int:item_id>',views.review,name='review'),
     path('new_item/',views.create_item,name='createItem'),
+
+
+    # has to be removed before deployment
+    path('debug_env/',views.debug_env_variables,name='debug_env'),
 ]
 
 urlpatterns += staticfiles_urlpatterns()

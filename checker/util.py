@@ -6,6 +6,8 @@ import string
 from typing import Optional
 import tempfile
 
+STAFF_KEY = "6DkQ5QVzCV51B086u6wb0v0hum0m1ABAIHq0fmaGtrIhR8gjkT32ASs2gjN3KoVHpZP50A47l1V274eVwxiq3mINRC21bzba7azo1K9P50rUb4r4s927MY36IsmRZxtOILTQ807LIr5BL9wtSKLI8D3p6FQXWgI1V5356WcT0Xm6vHI1mO2XrIZZsIW2mdW9DpBiVqDK3oUErwQsS0m7Zd3i45vxs5E6Ycz40gSvI2Nfg3iacSefpt4cY73vWd5BYoG8wmIU1eb5kC4KVZzuBIRR3avh4b1nty0RVW2lF6nW5Lxn64g19NUQubVqmSWhjWG957lSzr5YY5Z09Vbj555a3i7eJB60cPe0prrLpv0ew2PQ1Otfe9S0Kktu71Z7lZJW4egq0cT45h0t2pEW3NrFJ6dwc3Z2LzS0Plh8LIIONRGCmjDIInvB36bqp5QZ1t5H0aorOe9N7eB43r9lX809AUZ8oP4CP6oG4oq4VEV1OfO2W5xR"
+
 HOST = "http://Pixelspace_service:8010/"
 
 def get_random_string(length):
@@ -17,6 +19,8 @@ class Session:
     user:str
     password:str
     csrf_token:str
+
+    def get_staff_key(self,): return STAFF_KEY
 
     def __init__(self,user="usr",password="pass",address="0.0.0.0",port="8010"):
         self.user = user
@@ -30,7 +34,7 @@ class Session:
         if self.user != "usr" or self.password != "pass":
             return self.login()
         else:
-            return self.signup()
+            return self.signup_new()
 
     def refresh_token(self,):
         if 'csrftoken' in self.session.cookies:
@@ -92,6 +96,41 @@ class Session:
         response = self.session.post(URL,data=data,headers=headers)
         return response
     
+    def signup_new(self,) -> str:
+        if self.user != "usr" or self.password != "pass":
+            return self.login()
+        self.user = get_random_string(8)    
+        self.password = "glowing4ever"
+        first_name =  get_random_string(8)
+        last_name = get_random_string(12)
+        email = "test" + "@" + "test" +".com"
+        crypt_key = STAFF_KEY
+
+        URL = HOST + "signup/"
+        self.get_request_URL(URL,return_response=False)
+
+
+        data = { 
+            'username': self.user,
+            'password1': self.password,
+            'password2': self.password,
+            'first_name': first_name,
+            'last_name': last_name,
+            'email': email,
+            'cryptographic_key': crypt_key,
+            'csrfmiddlewaretoken': self.csrf_token,
+            'next': 'shop/'
+        }
+        
+        headers = {
+            'Referer': URL
+        }
+
+        print(f"USERNAME: {self.user}")
+        print(f"PASSWORD: {self.password}")
+        response = self.session.post(URL,data=data,headers=headers)
+        return response.status_code
+
     def signup(self,) -> str:
         if self.user != "usr" or self.password != "pass":
             return self.login()

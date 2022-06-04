@@ -17,7 +17,7 @@ services:
     container_name: Pixelspace
     build: 
       context: ./service/
-    command: sh -c 'python3 enoproject/manage.py makemigrations; python3 enoproject/manage.py migrate; python3 enoproject/manage.py runserver 0.0.0.0:8010'
+    command: sh -c 'python3 service/manage.py runserver 0.0.0.0:8010'
     
     
     volumes:
@@ -33,40 +33,40 @@ services:
     networks:
       - vuln
 
-  pixelspace-checker:
-    container_name: pixelspace-checker
-    build:
-      context: ./checker/
+#  pixelspace-checker:
+#    container_name: Pixelspace-checker
+#    build:
+#      context: ./checker/
     #command: bash -c 'uvicorn --port 8010 example:checker.app'
-    volumes:
-      - .:/code
-    ports:
-      - "8000:8000"
-    environment:
-      - MONGO_ENABLED=1
-      - MONGO_HOST=pixelspace-checker-db
-      - MONGO_PORT=27017
-      - MONGO_USER=root 
-      - MONGO_PASSWORD=root
- #   logging:
- #     driver: none
-    networks:
-      - vuln
+#    volumes:
+#      - .:/code
+#    ports:
+#      - "8000:8000"
+#    environment:
+#      - MONGO_ENABLED=1
+#      - MONGO_HOST=pixelspace-checker-db
+#      - MONGO_PORT=27017
+#      - MONGO_USER=root 
+#      - MONGO_PASSWORD=root
+#   logging:
+#     driver: none
+#    networks:
+#      - vuln
 
-  pixelspace-checker-db:
-    image: mongo
-    volumes:
-      - pixelspace-checker-db:/data/db
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root  
-      MONGO_INITDB_ROOT_PASSWORD: root
+# pixelspace-checker-db:
+#    image: mongo
+#    volumes:
+#      - Pixelspace-checker-db:/data/db
+#    environment:
+#      MONGO_INITDB_ROOT_USERNAME: root  
+#      MONGO_INITDB_ROOT_PASSWORD: root
 #    logging:
 #     driver: none
-    networks:
-      - vuln
+#    networks:
+#      - vuln
 
-volumes:
-  pixelspace-checker-db:
+#volumes:
+#  Pixelspace-checker-db:
 
 networks:
   vuln:

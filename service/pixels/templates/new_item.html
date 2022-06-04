@@ -1,10 +1,20 @@
+{# Load the tag library #}
+{% load django_bootstrap5 %}
+
+{# Load CSS and JavaScript #}
+{% bootstrap_css %}
+{% bootstrap_javascript %}
+
+{# Display django.contrib.messages as Bootstrap alerts #}
+{% bootstrap_messages %}
 {% block content %}
+
   <h2>NEW ITEM</h2>
   <form method="post" enctype="multipart/form-data">
+
     {% csrf_token %}
-    Itemname: {{form.name}}<br>
-    License: {{form.cert_licencse}}<br>
-    Data:    {{form.data}}<br>
-    <button type="submit">Create</button>
+    {% bootstrap_form form %}
+    {% bootstrap_button button_type="submit" content="OK" %}
+    {% bootstrap_button button_type="reset" content="Cancel" %}
   </form>
 {% endblock %}

@@ -28,7 +28,16 @@ You have {{user_listings|length}} enlisted objects:<br><br>
 <td>Price: {{ s.price }}</td><br>
 <td>Sold: {{ s.sold }}</td><br>
 <td><a href="{{s.item.pk}}">View item</a></td>
+<td><a href="/download/{{ s.item.data_name }}">View data</a></td>
 
+{% endfor %}
+{% endif %}
+
+You have {{user_bought|length}} bought objects:<br><br>
+{% if user_bought %}
+{% for s in user_bought %}
+<td>Name: {{ s.item.name }}</td><br>
+<td><a href="review/{{s.item.pk}}">Write a review</a></td>
 {% endfor %}
 {% endif %}
 

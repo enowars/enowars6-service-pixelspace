@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 from pathlib import Path
 import os
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -22,9 +23,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-&d%&6434%qgjcuoiyqo=c_yuv%8(-zva+98fn_rx08q=b(4%d4'
-
+SECRET_KEY2 = os.environ.get('SECRET_KEY2')
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG_STR = os.environ.get('DEBUG_MODE')
+if DEBUG_STR == "True":
+    DEBUG = True
+else:
+    DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -40,6 +45,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'pixels',
     'debug_permissions',
+    'django_bootstrap5',
+    'django_random_user_hash',
 ]
 
 MIDDLEWARE = [
@@ -83,15 +90,24 @@ WSGI_APPLICATION = 'pixelspace.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
+        'ENGINE': "django.db.backends.postgresql",
         'NAME': os.environ.get('POSTGRES_NAME'),
         'USER': os.environ.get('POSTGRES_USER'),
         'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
-        'HOST': 'pixelspace_db',
+        'HOST': "pixelspace_db",
         'PORT': 5432,
-    }
+    },
+    'test': {
+        'ENGINE': "django.db.backends.postgresql",
+        'NAME': os.environ.get('TEST_NAME'),
+        'USER': os.environ.get('TEST_USER'),
+        'PASSWORD': os.environ.get('TEST_PASSWORD'),
+        'HOST': os.environ.get('TEST_HOST'),
+        'PORT': int(os.environ.get('TEST_PORT')),
+    },
 }
 
+ENV_DB_PORT_TYPE = str(type(os.environ.get('TEST_DB_PORT')))
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
@@ -109,6 +125,13 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
+]
+
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+    'django.contrib.auth.hashers.Argon2PasswordHasher',
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
 ]
 
 

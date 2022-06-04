@@ -6,3 +6,6 @@ WORKDIR /code
 COPY requirements.txt /code/
 RUN pip install -r requirements.txt
 COPY . /code/
+
+#ENTRYPOINT [ "gunicorn", "-c", "gunicorn.conf.py", "pixelspace.asgi" ]
+ENTRYPOINT [ "python3", "entrypoint.py" ]
