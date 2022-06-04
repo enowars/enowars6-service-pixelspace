@@ -8,8 +8,8 @@ services:
       - POSTGRES_DB=postgres
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-    networks:
-      - vuln    
+#    networks:
+#      - vuln    
   
   web:
     container_name: Pixelspace
@@ -28,9 +28,9 @@ services:
       - PRODUCTION=False
     depends_on:
       - db
-    networks:
-      - vuln
+#    networks:
+#      - vuln
 
-networks:
-  vuln:
-    external: True
+#networks:
+#  vuln:
+#    external: True

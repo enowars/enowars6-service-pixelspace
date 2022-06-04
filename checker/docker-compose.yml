@@ -19,8 +19,8 @@ services:
       - MONGO_PASSWORD=root
  #   logging:
  #     driver: none
-    networks:
-      - vuln
+ #   networks:
+ #     - vuln
 
   pixelspace-checker-db:
     image: mongo
@@ -31,12 +31,12 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: root
 #    logging:
 #     driver: none
-    networks:
-      - vuln
+#    networks:
+#      - vuln
 
 volumes:
   pixelspace-checker-db:
  
-networks:
-  vuln:
-    external: True
+#networks:
+#  vuln:
+#    external: True
