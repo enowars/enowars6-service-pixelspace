@@ -6,9 +6,28 @@ from util import Session
 from enochecker3 import(
     ChainDB,
     Enochecker,
-    GetflagCheckerTaskMessage,
+    EnoLogMessage,
+
     MumbleException,
+    OffineException,
+    InternalErrorException,
+
+    #FLAG-Message-Tasks
+    GetflagCheckerTaskMessage,
     PutflagCheckerTaskMessage,
+
+    #NOISE-Message-Tasks
+    PutnoiseCheckerTaskMessage,
+    GetnoiseCheckerTaskMessage,
+
+    #HAVOC-Message-Tasks
+    HavocCheckerTaskMessage,
+
+    #EXPLOIT-Message-Tasks
+    ExploitCheckerTaskMessage,
+
+
+    
 )
 
 from enochecker3.utils import FlagSearcher, assert_equals, assert_in
@@ -49,6 +68,30 @@ async def getflag_test(task: GetflagCheckerTaskMessage, client: AsyncClient, db:
     assert_equals(r.status_code, 200,"FLAG_STORE 1: Retrieving license flag failed!")
     assert_in(task.flag, r.text, "FLAG_STORE 1: Flag not found in license.txt!")
 
+
+@checker.havoc(0)
+async def havoc(task: HavocCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
+    endpoints = [
+        'signup',
+        'login',
+        'logout',
+        'shop',
+        #'shop/1',
+        #'shop/purchase/1',
+        'user_items/',
+        #'user_items/1',
+        #'user_items/enlist/1',
+        #'user_items/review/1',
+        'new_item/',
+        'debug_env',
+    ]
+    session = Session(address=task.address,port=8010)
+    for point in endpoints:
+        URL = session.get_base_URL() + point + "/"
+        res = await session.get_request_URL(URL,return_response=True)
+        if res.status_code == 404:
+            raise MumbleException(f'HAVOC - Endpoint "{point}" not reachable')
+        
     
 if __name__ == "__main__":
     checker.run()
