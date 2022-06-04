@@ -15,7 +15,7 @@ os.environ['TEST_NAME'] = "test_db"
 os.environ['TEST_USER'] = "test_db_user"
 os.environ['TEST_PASSWORD'] = "test_db_password"
 os.environ['TEST_HOST'] = "test_db_host"
-os.environ['TEST_PORT'] = "2022"
+os.environ['TEST_DB_PORT'] = "2022"
 
 
 if PRODUCTION:
