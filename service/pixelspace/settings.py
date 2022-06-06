@@ -22,16 +22,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-&d%&6434%qgjcuoiyqo=c_yuv%8(-zva+98fn_rx08q=b(4%d4'
-SECRET_KEY2 = os.environ.get('SECRET_KEY2')
+SECRET_KEY = os.environ.get('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG_STR = os.environ.get('DEBUG_MODE')
-if DEBUG_STR == "True":
-    DEBUG = True
-else:
-    DEBUG = False
+DEBUG = int(os.environ.get('DEBUG'))
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ")
 
 
 # Application definition
@@ -89,23 +84,14 @@ WSGI_APPLICATION = 'pixelspace.wsgi.application'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': os.environ.get('TEST_ENGINE'),
-        'NAME': os.environ.get('TEST_NAME'),
-        'USER': os.environ.get('TEST_USER'),
-        'PASSWORD': os.environ.get('TEST_PASSWORD'),
-        'HOST': os.environ.get('TEST_HOST'),
-        'PORT': int(os.environ.get('TEST_DB_PORT')),
-       
-    },
-    'test': {
-        'ENGINE': os.environ.get('TEST_ENGINE'),
-        'NAME': os.environ.get('TEST_NAME'),
-        'USER': os.environ.get('TEST_USER'),
-        'PASSWORD': os.environ.get('TEST_PASSWORD'),
-        'HOST': os.environ.get('TEST_HOST'),
-        'PORT': int(os.environ.get('TEST_DB_PORT')),
-    },
+    "default": {
+        "ENGINE": os.environ.get("SQL_ENGINE", "django.db.backends.sqlite3"),
+        "NAME": os.environ.get("SQL_DATABASE", BASE_DIR / "db.sqlite3"),
+        "USER": os.environ.get("SQL_USER", "user"),
+        "PASSWORD": os.environ.get("SQL_PASSWORD", "password"),
+        "HOST": os.environ.get("SQL_HOST", "localhost"),
+        "PORT": os.environ.get("SQL_PORT", "5432"),
+    }
 }
 
 ENV_DB_PORT_TYPE = str(type(os.environ.get('TEST_DB_PORT')))
@@ -154,12 +140,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR,'static')
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-MEDIA_ROOT = os.path.join(BASE_DIR,'media')
 MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'mediafiles'

@@ -4,6 +4,8 @@ services:
   db:
     container_name: Pixelspace_db
     image: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=postgres
       - POSTGRES_USER=postgres
@@ -21,11 +23,8 @@ services:
       - .:/code
     ports:
       - "8010:8010"
-    environment:
-      - POSTGRES_NAME=postgres
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - PRODUCTION=False
+    env_file:
+      - ./.env.dev
     depends_on:
       - db
 #    networks:
@@ -34,3 +33,6 @@ services:
 #networks:
 #  vuln:
 #    external: True
+
+volumes:
+  postgres_data:

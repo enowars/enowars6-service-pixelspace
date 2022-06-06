@@ -1,7 +1,9 @@
 import secrets
 from typing import Optional
+from urllib.request import CacheFTPHandler
 from httpx import AsyncClient
-from util import Session
+from util_old import Session
+from util import *
 
 from enochecker3 import(
     ChainDB,
@@ -30,9 +32,9 @@ from enochecker3 import(
 
 from enochecker3.utils import FlagSearcher, assert_equals, assert_in
 
-checker = Enochecker("PixelSpace",8010)
+checker = Enochecker("Pixelspace",8010)
 def app(): return checker.app
-
+"""
 @checker.putflag(0)
 async def putflag_test(task: PutflagCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:    
     item_name = 'py_req_item15'
@@ -90,6 +92,15 @@ async def havoc(task: HavocCheckerTaskMessage, client: AsyncClient, db: ChainDB)
         if res.status_code == 404:
             raise MumbleException(f'HAVOC - Endpoint "{point}" not reachable')
         
-    
+"""
+
+@checker.putnoise(0)
+async def put_noise(task: PutnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
+    await register_user(client,None)
+
+@checker.getnoise(0)
+async def get_noise(task: GetnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
+    print("GET_NOISE")
+
 if __name__ == "__main__":
     checker.run()

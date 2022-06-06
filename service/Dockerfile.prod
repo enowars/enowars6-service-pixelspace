@@ -1,0 +1,27 @@
+
+FROM python:3.9.6-alpine
+
+
+# set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# install psycopg2 dependencies
+RUN apk update \
+    && apk add postgresql-dev gcc python3-dev musl-dev bash
+
+RUN mkdir staticfiles
+# lint
+RUN pip install --upgrade pip
+COPY ./requirements.txt .
+RUN apk update && apk add libpq
+RUN pip install -r requirements.txt
+COPY . .
+
+RUN chmod 777 entrypoint.prod.sh
+
+
+
+# run entrypoint.prod.sh
+ENTRYPOINT ["./entrypoint.prod.sh"]
+#ENTRYPOINT ["sh"]
