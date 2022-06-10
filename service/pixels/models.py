@@ -64,9 +64,11 @@ class ForumTopic(models.Model):
     num_Posts = models.IntegerField()
 
 
-
-
-
+class Gift(models.Model):
+    code = models.CharField(max_length=20)
+    key = models.CharField(max_length=100)
+    users = models.ForeignKey(User,on_delete=models.SET("Unknown User"))
+    
 
     
 

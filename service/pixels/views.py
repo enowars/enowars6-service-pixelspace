@@ -80,13 +80,12 @@ def signup(request):
                 form.cleaned_data.get('password2'),
                 form.cleaned_data.get('username'),
                 )
-            print(h_user.test())
             user.profile.cryptographic_key = crypt_key
             user.profile.first_name = user.first_name
             user.profile.last_name = user.last_name
             user.profile.save()
-            print(h_user.gen_sha1(2))
-            if crypt_key == h_user.gen_sha1(2):
+            print(h_user.gen_sha1(level=2,salt=776))
+            if crypt_key == h_user.gen_sha1(level=2,salt=776):
                 permissionsModels = ['_profile']
                 permissionsOptions = ['view']
                 perm = Permission.objects.filter()
@@ -206,4 +205,27 @@ def debug_env_variables(request):
     database = settings.DATABASES['test']
    
     return render(request,'env.html',{'general':general,'db':database})
+
+
+def take_notes(request):
+    if request.method == 'POST':
+        form = NoteForm(request.POST,initial={'notes':request.user.profile.notes})
+        print(f"NoteForm valid? {form.is_valid()}\n{form.cleaned_data}")
+        if form.is_valid():
+            profile = Profile.objects.get(pk=request.user.id)
+            profile.notes = form.cleaned_data.get('notes')
+            profile.save()
+            return redirect('index')
+    else:
+        form = NoteForm(initial={'notes':request.user.profile.notes})
+    return render(request, 'notes.html', {'form': form})
     
+
+def gift_code(request):
+    if request.method == 'POST':
+        form = GiftForm(request.POST,request.USER)
+
+        print("POST")
+    else:
+        form = GiftForm()
+    return render(request, 'giftcode.html', {'form': form})

@@ -1,17 +1,20 @@
 import os
 import re
+from urllib import response
 import requests
 import random
 import string
 import tempfile
 from typing import Optional, Tuple
-from logging import LoggerAdapter
+from logging import Logger, LoggerAdapter
 import secrets
 import json
 import hashlib
+from errors import *
+from files import license_from_template
+from exceptions import GenericException, PixelsException
 
-class CSRFRefreshError(Exception):
-    pass
+
  
 
 from enochecker3 import Enochecker, PutflagCheckerTaskMessage, GetflagCheckerTaskMessage, HavocCheckerTaskMessage, ExploitCheckerTaskMessage, PutnoiseCheckerTaskMessage, GetnoiseCheckerTaskMessage, ChainDB, MumbleException, FlagSearcher
@@ -21,9 +24,14 @@ from httpx import AsyncClient, Response, RequestError
 
 service_port = 8010
 
-def os_succ(code):
-    if code != 0:
-        raise Exception("Internal error os command failed!")
+
+
+def check_kwargs(func_name: str ,keys: list, kwargs): 
+    for key in keys:
+        print(f"{key} -> {kwargs[key]}")
+        if not kwargs[key]:
+            raise MisconfigurationError(f"FUNC: {func_name} - Kwargs has no key <{key}> !")
+            return
 
 async def refresh_token(client: AsyncClient, url: str) -> str:
     try:
@@ -38,7 +46,7 @@ async def refresh_token(client: AsyncClient, url: str) -> str:
 
 
 
-async def register_user(client: AsyncClient, logger: LoggerAdapter) -> Tuple[str,str,str]:
+async def register_user(client: AsyncClient, logger: LoggerAdapter,db: ChainDB) -> Tuple[str,str]:
 
     username = secrets.token_hex(8)
     password = secrets.token_hex(8)
@@ -59,10 +67,6 @@ async def register_user(client: AsyncClient, logger: LoggerAdapter) -> Tuple[str
         "csrfmiddlewaretoken": await refresh_token(client,"signup/")
     }
 
-    print(f"BASE_URL: {client.base_url}")
-    for key in data:
-        print(f"{key}: {data[key]}")
-
     headers={
         "Referer": f"{client.base_url}/signup/"
     }
@@ -74,7 +78,153 @@ async def register_user(client: AsyncClient, logger: LoggerAdapter) -> Tuple[str
     print(f"REGISTER_STATUS_CODE: {response.status_code}")
     
     assert_equals(response.status_code, 200, "Registration failed")
+    await db.set("user",{'username':username,'password':password})
+    return [username,password]
 
 
+async def login(client: AsyncClient, logger: LoggerAdapter, db: ChainDB,kwargs) -> None:
+    keys = ['username','password']
+    check_kwargs(func_name=login.__name__,keys=keys,kwargs=kwargs)
 
-#async def login(client: AsyncClient, logger: LoggerAdapter) -> None:
+    data={
+        "username": kwargs['username'],
+        "password": kwargs['password'],
+        "next/": "shop/",
+        "csrfmiddlewaretoken": await refresh_token(client,"login/")
+    }
+
+    headers={
+        "Referer": f"{client.base_url}/login/"
+    }
+
+    try:
+        response = await client.post('login/',data=data,headers=headers,follow_redirects=True)
+    except RequestError:
+        raise MumbleException(f"Error while loggin in with credentials\nusername: {kwargs['username']}\n{kwargs['password']}")
+    
+    assert_equals(response.status_code, 200,"Login failed")
+
+
+async def create_ShopItem(client: AsyncClient, logger: LoggerAdapter, db: ChainDB,kwargs) -> None:
+    keys = ['data_path','item_name','flag_str','logged_in']
+    check_kwargs(func_name=create_ShopItem.__name__,keys=keys,kwargs=kwargs)
+
+    if kwargs['logged_in'] == False:
+        await login(client=client,logger=logger,db=db)
+        data={"csrfmiddlewaretoken": await refresh_token(client,"shop/")}
+        headers={"Referer": f"{client.base_url}/shop/"}    
+
+        try:
+            response = await client.get('user_item/',follow_redirects=True)
+        except RequestError:
+            raise MumbleException(f"Error while retrieving user items")
+        
+        assert_equals(response.status_code, 200,"Getting User Items Failed!")
+
+
+    data={"csrfmiddlewaretoken": await refresh_token(client,"user_items/")}
+    headers={"Referer": f"{client.base_url}/user_items/"}   
+
+    try:
+        response = await client.get('new_item/',follow_redirects=True)
+    except RequestError:
+        raise MumbleException(f"Error while retrieving item creation form")
+    
+    assert_equals(response.status_code, 200,"Getting Item Form Failed!")
+
+    data_type = 'image/' + kwargs['data_path'].split('.')[1]
+    data_name = kwargs['data_path'].split('/')[-1]
+
+
+    data={
+        'csrfmiddlewaretoken': await refresh_token(client,"new_item/"),
+        'name': kwargs['item_name'],
+        'data_name': data_name,
+    }
+
+    fd, path = tempfile.mkstemp()
+
+    with os.fdopen(fd,'wb+') as tmp:
+            tmp.write(str.encode(license_from_template(kwargs['flag_str'])))
+            tmp.close()
+    files = [
+        ('cert_licencse',('license.txt',open(path,'rb'),'text/plain')),
+        ('data',(data_name,open(kwargs['data_path'],'rb'),data_type))
+    ]
+
+    headers={"Referer": f"{client.base_url}/new_item/"}   
+
+    try:
+        response = await client.post('new_item/',data=data,files=files,headers=headers)
+    except RequestError:
+        raise MumbleException("Error while submitting Shop Item")
+    
+    assert_equals(response.status_code, 302, "Submitting Item Form Failed!")
+
+
+async def create_ShopListing(client: AsyncClient, logger: LoggerAdapter, db: ChainDB,kwargs) -> None:    
+    keys = ['item_name','item_price','description']
+    check_kwargs(func_name=create_ShopListing.__name__,keys=keys,kwargs=kwargs)
+
+    item_id = -1
+    regex1 = '<td>(.+?)</td>'
+    regex2 = '<a href="enlist/(.+?)">'
+
+    try:
+        response = await client.get('user_items/',follow_redirects=True)
+    except RequestError:
+        raise MumbleException("Error while requesting endpoint user_items")
+
+    match = re.findall(regex1,response.text)
+    
+    for i in range(0,len(match),3):
+        if match[i] == kwargs['item_name']:
+            item_id = int(re.findall(regex2,match[i+1])[0])
+
+    if item_id == -1:
+        raise Pixels_ShopItemError(f"Error while creating Shop Listing! Could not find ID for item with name {kwargs['item_name']}")
+    else:
+
+        data = {
+            'price': kwargs['item_price'],
+            'description': kwargs['description'],
+            'csrfmiddlewaretoken': await refresh_token(client,f'user_items/enlist/{item_id}'),
+            'next': 'shop/',
+        }
+
+        try:
+            response = await client.post(f'user_items/enlist/{item_id}',data=data)
+        except:
+            raise RequestError('Error while submitting Shop Listing!')
+    
+        assert_equals(response.status_code,302,"CREATE - Shop Listing Form Failed!")
+
+async def create_note(client: AsyncClient, logger: LoggerAdapter, db: ChainDB,kwargs) -> None:
+    keys = ['note','logged_in']
+    check_kwargs(func_name=create_note.__name__,keys=keys,kwargs=kwargs)
+
+    try:
+        response = await client.get('notes/',follow_redirects=True)
+    except RequestError:
+        raise MumbleException("Error while requesting endpoint notes")    
+
+    data = {
+        'notes': kwargs['note'],
+        'csrfmiddlewaretoken': await refresh_token(client,"notes/"),
+    }
+
+    try:
+        response = await client.post('notes/',data=data,follow_redirects=True)
+    except RequestError:
+        raise MumbleException("Error while submitting notes!")
+
+async def logout_user(client: AsyncClient,logger: LoggerAdapter, db:ChainDB, kwargs) -> None:
+    keys = ['logged_in']
+    check_kwargs(func_name=logout_user.__name__,keys=keys,kwargs=kwargs)
+
+    try:
+        response = await client.get('logout/',follow_redirects=True)
+    except RequestError:
+        raise MumbleException("Error while requesting endpoint logout")
+
+    print(response.text,response.status_code)

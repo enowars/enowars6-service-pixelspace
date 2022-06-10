@@ -2,6 +2,6 @@ Django>=3.0,<4.0
 psycopg2==2.9.1
 django-debug-permissions
 django-bootstrap5
-django-random-user-hash==0.0.3
+django-random-user-hash==0.0.4
 gunicorn>=20.0
 uvicorn==0.17.6

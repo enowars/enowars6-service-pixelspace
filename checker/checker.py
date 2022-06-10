@@ -34,41 +34,102 @@ from enochecker3.utils import FlagSearcher, assert_equals, assert_in
 
 checker = Enochecker("Pixelspace",8010)
 def app(): return checker.app
-"""
+
 @checker.putflag(0)
-async def putflag_test(task: PutflagCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:    
-    item_name = 'py_req_item15'
-    username = 'snuhrhlm'
-    password = 'yohxzzvrtqgkqufz1'
-
-    session = Session(user=username,password=password,address=task.address,port=8010)
-    session.authenticate()
-
-    r = session.create_item(data_path='frog.png',item_name=item_name,sign_value=f"ENO{task.flag}")
-    print(f"\n Create item response: {r.status_code}\n")
-    assert_equals(r.status_code,200,"FLAG_STORE_1: Could not create Flagstore item!")
-
-    r = session.enlist_item(item_name='py_req_item14')
-    assert_equals(r.status_code,200,"FLAG_STORE 1: Could not enlist Flagstore item!")
+async def putflag_license(task: PutflagCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:   
+    item_name = 'CHECKER_FROG'
+    username,password = await register_user(client=client,logger=None,db=db)
+    shop_item_kwargs =  {
+        'data_path': '/frog.png',
+        'item_name': item_name,
+        'logged_in': True,
+        'flag_str': task.flag,
+    }
     
+    await create_ShopItem(client=client,logger=None,db=db,kwargs=shop_item_kwargs)
+    shop_listing_kwargs = {
+        'item_name': item_name,
+        'item_price': 100.0,
+        'description': 'THIS IS SUPER EXPENSIVE GG CHECKER',
+    }
+    await create_ShopListing(client=client,logger=None,db=db,kwargs=shop_listing_kwargs)
+    await logout_user(client=client,logger=None,db=db,kwargs={'logged_in':True})
     await db.set("license_flag",{'flag':task.flag,'user':username,'password':password,'item':item_name})
 
+
 @checker.getflag(0)
-async def getflag_test(task: GetflagCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
+async def getflag_license(task: GetflagCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
+    item_id = -1
+    regex_item = '<a href="(.+?)">View Item</a>'
+    regex_license = '<a href="/(.+?)">View License</a>'
+
+    try: 
+        object = await db.get("license_flag")
+    except DBSearchError:
+        raise MumbleException("Could not retrieve data from ChainDB!")
+
+    login_kwargs={
+        'username': object['user'],
+        'password': object['password'],
+    }
+    await login(client=client,logger=None,db=db,kwargs=login_kwargs)
     try:
-        #token = await db.get("token")
-        value_dict = await db.get("license_flag")
-    except KeyError:
-        raise MumbleException("Missing database entry from FLAG_STORE 1")
+        response = await client.get('user_items/',follow_redirects=True)
+    except RequestError:
+        raise MumbleException("Error while retrieving user items!")
+    
+    
+    item_id = re.findall(regex_item,response.text)[0]
+    if item_id == -1:
+        raise MumbleException("Errow while searching for flag item (license)!")
 
-    session = Session(user=value_dict['user'],password=value_dict['password'],address=task.address,port=8010)
-    session.login()
-    r = session.get_license(item_name=value_dict['item'])
+    try:  
+        response = await client.get(f'user_items/{item_id}',follow_redirects=True)
+    except RequestError:
+        raise MumbleException(f"Error while viewing user item with id: {item_id}")
+    
+    license_url = re.findall(regex_license,response.text)[0]
 
-    assert_equals(r.status_code, 200,"FLAG_STORE 1: Retrieving license flag failed!")
-    assert_in(task.flag, r.text, "FLAG_STORE 1: Flag not found in license.txt!")
+    try:
+        response = await client.get(f"{license_url}",follow_redirects=True)
+    except RequestError:
+        raise MumbleException(f"Error while viewing license of user item with id: {item_id}")
+        
+    assert_in(object['flag'],response.text)    
+    
 
 
+@checker.putflag(1)
+async def putflag_notes(task: PutflagCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:    
+    username,password = await register_user(client=client,logger=None,db=db)
+    note_kwargs = {
+        'note':task.flag,
+        'logged_in': True,
+    }
+    await create_note(client=client,logger=None,db=db,kwargs=note_kwargs)
+    await db.set('note_flag',{'flag':task.flag,'user':username,'password':password})
+
+@checker.getflag(1)
+async def getflag_notes(task: GetflagCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
+    regex_notes = '<input type="text" name="notes" value="(.+?)" maxlength="50000" required id="id_notes">'
+    try: 
+        object = await db.get("note_flag")
+    except DBSearchError:
+        raise MumbleException("Could not retrieve data from ChainDB!")
+
+    login_kwargs={
+        'username': object['user'],
+        'password': object['password'],
+    }
+    await login(client=client,logger=None,db=db,kwargs=login_kwargs)
+    try:
+        response = await client.get('notes/',follow_redirects=True)
+    except RequestError:
+        raise MumbleException("Error while retrieving user items!")
+
+    match = re.findall(regex_notes,response.text)[0]
+    assert_in(object['flag'],match)
+"""
 @checker.havoc(0)
 async def havoc(task: HavocCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
     endpoints = [
