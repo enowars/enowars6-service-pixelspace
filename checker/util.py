@@ -28,7 +28,6 @@ service_port = 8010
 
 def check_kwargs(func_name: str ,keys: list, kwargs): 
     for key in keys:
-        print(f"{key} -> {kwargs[key]}")
         if not kwargs[key]:
             raise MisconfigurationError(f"FUNC: {func_name} - Kwargs has no key <{key}> !")
             return
@@ -75,7 +74,6 @@ async def register_user(client: AsyncClient, logger: LoggerAdapter,db: ChainDB) 
         response = await client.post("signup/",data=data,headers=headers,follow_redirects=True)
     except RequestError:    
         raise MumbleException(f"Error while registering user")
-    print(f"REGISTER_STATUS_CODE: {response.status_code}")
     
     assert_equals(response.status_code, 200, "Registration failed")
     await db.set("user",{'username':username,'password':password})
@@ -227,4 +225,32 @@ async def logout_user(client: AsyncClient,logger: LoggerAdapter, db:ChainDB, kwa
     except RequestError:
         raise MumbleException("Error while requesting endpoint logout")
 
-    print(response.text,response.status_code)
+
+def exploitable_item_name(min_length:int) -> str: 
+
+    exploitable_names = ['ss','s','i','SS','S','I']
+    item_name = ''.join(secrets.choice(string.ascii_letters) for i in range(random.randint(min_length,18)))
+
+    if any(sub in item_name for sub in exploitable_names):
+       return item_name
+
+    index = secrets.randbelow(len(item_name))
+    exploit = exploitable_names[secrets.randbelow(len(exploitable_names))]
+    return item_name[:index] + exploit + item_name[index:]
+
+async def make_item_name_exploitable(item_name:str) -> str:
+    exploits = {
+        'ss': 223,
+        'SS': 223,
+        's': 383,
+        'S': 383,
+        'i': 305,
+        'I': 305,
+    }
+    res = ""
+    for key in exploits:
+        if key in item_name:
+            index = item_name.index(key)
+            res = item_name[0:index] + chr(exploits[key]) + item_name[index+len(key):]
+            break
+    return res
