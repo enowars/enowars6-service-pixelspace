@@ -65,7 +65,7 @@ class ShopListing(models.Model):
     item = models.OneToOneField(ShopItem, on_delete=models.CASCADE)
     reception = models.ForeignKey(MultiUserDict, on_delete=models.CASCADE,blank=True,null=True,name="Receptions",related_name="Comment")
     buyers = models.ForeignKey(MultiUserDict, on_delete=models.CASCADE,blank=True,null=True,name="Buyers",related_name="User")
-    price = models.FloatField(validators=[MinValueValidator(0.0),MaxValueValidator(1000000000)])
+    price = models.FloatField(validators=[MinValueValidator(0.0),MaxValueValidator(100000000001.0)])
     description = models.CharField(max_length=300)
     sold = models.IntegerField(validators=[MinValueValidator(0)],default=0)
 

