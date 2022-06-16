@@ -27,9 +27,7 @@ urlpatterns = [
     #util
     path('notes/',views.take_notes, name='notes'),
     path('giftcode/',views.gift_code, name='code'),
-
-    # has to be removed before deployment
-    path('debug_env/',views.debug_env_variables,name='debug_env'),
+    #path('giftcode/create/',views.create_gift, name='createCode'),
 ]
 
 urlpatterns += staticfiles_urlpatterns()

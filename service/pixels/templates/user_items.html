@@ -1,9 +1,9 @@
 {% csrf_token %}
-<h1>itempage</h1>
+<h1>Profile</h1>
 {% if user.is_authenticated %}
-<a href="../">Home</a><br>
-<a href="../shop">Shop</a><br>
-<a href="../new_item">Create new Item</a>
+<a href="../">Home</a> <a href="../shop">Shop</a> <a href="../new_item">Create new Item</a><br>
+<p>Crypt Key: {{user.profile.cryptographic_key}}</p>
+
 {% endif %}
 {% if user_items %}
 <br>
@@ -38,7 +38,7 @@ You have {{user_bought|length}} bought objects:<br><br>
 {% if user_bought %}
 {% for s in user_bought %}
 <td>Name: {{ s.item.name }}</td><br>
-<td><a href="review/{{s.item.pk}}">Write a review</a></td>
+<td><a href="{{s.pk}}">View Item</a> <a href="review/{{s.item.pk}}">Write a review</a></td>
 {% endfor %}
 {% endif %}
 

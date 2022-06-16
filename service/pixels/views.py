@@ -12,6 +12,7 @@ from pixels.forms import *
 from pixels.util import *
 from django.conf import settings
 import django_random_user_hash.user as HashUser
+from django.contrib import messages
 import hashlib
 import random
 import string
@@ -115,19 +116,24 @@ def shop(request):
     return render(request,'shop.html',{'shop_items': ShopListing.objects.all()})
 
 def item(request,item_id):
-    return render(request, 'shop_item.html', {'item': ShopListing.objects.get(pk=item_id)})
+    content_dict = {}
+    content_dict['item'] = ShopListing.objects.get(pk=item_id)
+    content_dict['reviews'] = Receptions.objects.filter(container=MultiUserDict.objects.get(name=f'{item_id}-receptions'))
+
+    return render(request, 'shop_item.html', content_dict)
 
 def create_item(request):
     if request.method == 'POST':
         form = ShopItemForm(request.POST,request.FILES,request.user)
-        print(f"CREATE_ITEM_FORM_FROM_REQUESTS:\n")
-        
-        print(form.data)
-        print(form.files)
-        print(form.is_valid())
-        print(form.errors)
-        
+        print(f"CREATE_ITEM_FORM_FROM_REQUESTS:\n")        
         if form.is_valid():            
+            items = ShopItem.objects.all()
+            name = form.cleaned_data.get('name')
+            for i in items:
+                print(i.name,name)
+                if i.name == name:
+                    messages.error(request,'An item with this name already exists! Please choose another one!')
+                    return redirect('createItem')
             obj = form.save(commit=False)
             obj.user = request.user
             obj.cert_licencse = form.cleaned_data.get('cert_licencse')
@@ -143,17 +149,17 @@ def user_items(request):
     content_dict['user_items'] = ShopItem.objects.filter(user=request.user)
     content_dict['user_listings'] = ShopListing.objects.filter(item__user=request.user)
     print(content_dict['user_listings'])
-    #content_dict['user_bought'] = ShopListing.objects.filter(item__buyers=request.user.id)
-    """
+    bought_items = []
     items = ShopListing.objects.all()
     for i in items:
-        print(f"ItemName: {i.item.name}\n\tBuyers:")
-        if not i.buyers:
-            print("\t NONE - DEBUG")
-        else:
-            for i,b in enumerate(i.buyers):
-                print(f"{i}: {i.buyers.name}")
-    """
+        storages = Buyers.objects.filter(container=MultiUserDict.objects.get(name=f"{i.item.pk}-buyers"))
+        if storages != None:
+            for s in storages:
+                if s.key == request.user.username:
+                    bought_items.append(i)
+                    break
+    content_dict['user_bought'] = bought_items
+    
     
     return render(request,'user_items.html',content_dict)
 
@@ -165,6 +171,8 @@ def create_listing(request,item_id):
             obj = form.save(commit=False)
             obj.item = ShopItem.objects.get(pk=item_id)
             obj.description = form.cleaned_data.get('description')
+            obj.buyers = MultiUserDict.objects.create(name=f'{item_id}-buyers')
+            obj.receptions = MultiUserDict.objects.create(name=f'{item_id}-receptions')
             obj.sold = 0
             obj.save()
             return redirect('shop')
@@ -173,14 +181,20 @@ def create_listing(request,item_id):
     return render(request, 'enlist_item.html', {'form': form,'user_item':ShopItem.objects.get(pk=item_id)})
 
 def purchase(request,item_id):
-    print(item_id)
     item = ShopListing.objects.get(pk=item_id)
-
     buyer = request.user
+    if request.user == item.item.user:
+        messages.error(request,'You cannot buy your own item!')
+        return redirect('shop')
     if buyer.profile.balance >= item.price:
         item.item.user.profile.balance += item.price
+        item.item.user.profile.save()
         buyer.profile.balance -= item.price
+        buyer.profile.save()
         set_buyer(buyer,item.item.name)
+    else:
+        messages.error(request,'You cannot aford to buy this item!')
+        return redirect('shop')
     return redirect('shop')
     
 
@@ -189,7 +203,22 @@ def item_page(request,item_id):
 
 
 def review(request,item_id):
-    return redirect('shop')
+    if request.method == 'POST':
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            com = form.save(commit=False)
+            com.date = datetime.strftime(datetime.now(), "%d/%m/%y %H:%M")
+            com.save()
+            reception = Receptions.objects.create(
+                container=MultiUserDict.objects.get(name=f"{item_id}-receptions"),
+                key= str(request.user.username),
+                value= com
+            )
+            reception.save()
+            return redirect('shop')
+    else:
+        form = CommentForm()
+    return render(request,'review.html',{'form': form})
 
 #has to be removed before deployment
 def debug_env_variables(request):
@@ -229,3 +258,4 @@ def gift_code(request):
     else:
         form = GiftForm()
     return render(request, 'giftcode.html', {'form': form})
+

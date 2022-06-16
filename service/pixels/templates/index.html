@@ -5,9 +5,9 @@
 {% block content %}
 {% if user.is_authenticated %}
   Hi {{ user.username }}!
-  <a href="logout">logout</a><br>
-  <a href="shop">shop</a><br>
-  <a href="user_items">My Items</a><br>
+  <a href="user_items">Profile</a> <a href="shop">shop</a> <a href="logout">logout</a><br>
+  
+  
 {% else %}
   <p>You are not logged in</p>
   <a href="login">Log In</a>

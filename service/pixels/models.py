@@ -6,10 +6,35 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
+from django.contrib.postgres.fields import HStoreField
 
 # Create your models here.
+class Comment(models.Model):
+    content = models.CharField(max_length=200)
+    stars = models.IntegerField(validators=[MinValueValidator(0),MaxValueValidator(5)],default=3)
+    date = models.CharField(max_length=50)
 
+class MultiUserDict(models.Model):
+    name = models.CharField(max_length=70)
 
+    def __str__(self):
+        return self.name
+
+class Buyers(models.Model):
+    container = models.ForeignKey(MultiUserDict,on_delete=models.CASCADE, db_index=True)
+    key = models.CharField(max_length=100, db_index=True)
+    value = models.CharField(max_length=100, db_index=True)
+
+    def __str__(self):
+        return str(self.container)
+
+class Receptions(models.Model):
+    container = models.ForeignKey(MultiUserDict,on_delete=models.CASCADE, db_index=True,related_name="Container")
+    key = models.CharField(max_length=100, db_index=True)
+    value = models.ForeignKey(Comment,on_delete=models.CASCADE, db_index=True,related_name="Reception")
+
+    def __str__(self):
+        return str(self.container)
     
 
 class Profile(models.Model):
@@ -29,12 +54,6 @@ def create_user_profile(sender, instance, created, **kwargs):
 def save_user_profile(sender,instance,**kwargs):
     instance.profile.save()
 
-class Comment(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET("Unknown User"))
-    content = models.CharField(max_length=200)
-    stars = models.IntegerField(validators=[MinValueValidator(0),MaxValueValidator(5)],default=0)
-    date = models.CharField(max_length=50)
-
 class ShopItem(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     name = models.CharField(max_length=20)
@@ -44,32 +63,13 @@ class ShopItem(models.Model):
 
 class ShopListing(models.Model):
     item = models.OneToOneField(ShopItem, on_delete=models.CASCADE)
-    reception = models.ForeignKey(Comment, on_delete=models.SET("Unknown User"),blank=True,null=True)
-    buyers = models.ForeignKey(User, on_delete=models.DO_NOTHING,blank=True,null=True)
+    reception = models.ForeignKey(MultiUserDict, on_delete=models.CASCADE,blank=True,null=True,name="Receptions",related_name="Comment")
+    buyers = models.ForeignKey(MultiUserDict, on_delete=models.CASCADE,blank=True,null=True,name="Buyers",related_name="User")
     price = models.FloatField(validators=[MinValueValidator(0.0),MaxValueValidator(1000000000)])
     description = models.CharField(max_length=300)
-    sold = models.IntegerField(validators=[MinValueValidator(0),MaxValueValidator(100)],default=0)
-    
-
-class ForumPost(models.Model):
-    creator = models.ForeignKey(User,on_delete=models.SET("Unknown User"))
-    content = models.CharField(max_length=500)
-    date = models.CharField(max_length=50)
-
-class ForumTopic(models.Model):
-    creator = models.ForeignKey(User,on_delete=models.SET("Unknown User"))
-    posts = models.ForeignKey(ForumPost,on_delete=models.SET("Unknown User"),blank=True,null=True)
-    creation_date = models.CharField(max_length=50)
-    last_post = models.CharField(max_length=50)
-    num_Posts = models.IntegerField()
-
+    sold = models.IntegerField(validators=[MinValueValidator(0)],default=0)
 
 class Gift(models.Model):
     code = models.CharField(max_length=20)
-    key = models.CharField(max_length=100)
-    users = models.ForeignKey(User,on_delete=models.SET("Unknown User"))
-    
-
-    
-
-
+    value = models.CharField(max_length=100)
+    users = models.ForeignKey(MultiUserDict, on_delete=models.CASCADE,blank=True,null=True,name="Receivers",related_name="Receivers")

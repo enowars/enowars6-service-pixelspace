@@ -1,4 +1,4 @@
-from django.db.models import FileField
+from django.db.models import FileField,Field
 from django.forms import forms
 from django.template.defaultfilters import filesizeformat
 from django.utils.translation import gettext_lazy as _

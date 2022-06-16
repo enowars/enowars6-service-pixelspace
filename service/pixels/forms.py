@@ -1,5 +1,6 @@
+from xml.etree.ElementTree import Comment
 from django import forms
-from pixels.models import ShopListing, ShopItem, Profile, Gift
+from pixels.models import ShopListing, ShopItem, Profile, Gift, Comment
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import password_validation
@@ -19,11 +20,11 @@ class ShopListingForm(forms.ModelForm):
         fields = ['price','description']
 
 class SignupForm(UserCreationForm):
-    first_name = forms.CharField(max_length=12, min_length=4, required=True, help_text='Required: First Name',
+    first_name = forms.CharField(max_length=20, min_length=4, required=True, help_text='Required: First Name',
                                 widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First Name'}))
-    last_name = forms.CharField(max_length=12, min_length=4, required=True, help_text='Required: Last Name',
+    last_name = forms.CharField(max_length=20, min_length=4, required=True, help_text='Required: Last Name',
                                widget=(forms.TextInput(attrs={'class': 'form-control'})))
-    email = forms.EmailField(max_length=50, help_text='Required. Inform a valid email address.',
+    email = forms.EmailField(max_length=100, help_text='Required. Inform a valid email address.',
                              widget=(forms.TextInput(attrs={'class': 'form-control'})))
     password1 = forms.CharField(label=_('Password'),
                                 widget=(forms.PasswordInput(attrs={'class': 'form-control'})),
@@ -54,7 +55,17 @@ class NoteForm(forms.ModelForm):
         model = Profile
         fields = ['notes']
 
-class GiftForm(forms.ModelForm):
+class GiftReceiveForm(forms.ModelForm):
     class Meta:
         model = Gift
         fields = ['code']
+
+class GiftCreationForm(forms.ModelForm):
+    class Meta:
+        model = Gift
+        fields = ['code','value']
+
+class CommentForm(forms.ModelForm):
+    class Meta:
+        model = Comment
+        fields = ['stars','content']
