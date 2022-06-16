@@ -65,11 +65,14 @@ async def getflag_license(task: GetflagCheckerTaskMessage, client: AsyncClient, 
     item_id = -1
     regex_item = '<a href="(.+?)">View Item</a>'
     regex_license = '<a href="/(.+?)">View License</a>'
-
     try: 
         user = await db.get(task.task_chain_id+"_user")
+    except KeyError:
+        raise MumbleException("Could not retrieve data from ChainDB!")
+
+    try:
         flag = await db.get(task.task_chain_id+"_flag")
-    except DBSearchError:
+    except KeyError:
         raise MumbleException("Could not retrieve data from ChainDB!")
     if flag != task.flag:
         raise MumbleException(f"Flags with task_chain_id={task.task_chain_id} are different (DB and task)!")
@@ -125,7 +128,7 @@ async def getflag_notes(task: GetflagCheckerTaskMessage, client: AsyncClient, db
     try: 
         user = await db.get(task.task_chain_id+"_user")
         flag = await db.get(task.task_chain_id+"_flag")
-    except DBSearchError:
+    except KeyError:
         raise MumbleException("Could not retrieve data from ChainDB!")
     if flag != task.flag:
         raise MumbleException(f"Flags with task_chain_id={task.task_chain_id} are different (DB and task)!")
