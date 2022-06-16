@@ -275,8 +275,25 @@ async def exploit_staff(task: ExploitCheckerTaskMessage, client: AsyncClient, db
 
 ############################### HAVOCS #################################
 
-@checker.havoc(1)
+@checker.havoc(0)
 async def havoc_endpoints(task: HavocCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
-    endpoints = []
+    endpoints = [
+        '',
+        'signup/',
+        'login/',
+        'shop/',
+        #'user_items/',
+        'new_item/',
+        #'notes/',
+        #'giftcode/',
+    ]
+    for e in endpoints:
+        try:
+            response = await client.get(e,follow_redirects=True)
+        except ResponseError:
+            raise MumbleException(f"HAVOC - Cannot reach endpoint <{e}> !")
+    assert_equals(1,1)
+
+    
 if __name__ == "__main__":
     checker.run()
