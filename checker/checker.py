@@ -156,7 +156,7 @@ async def put_noise_base_functions(task: PutnoiseCheckerTaskMessage, client: Asy
         'data_path': '/frog.png',
         'item_name': item_name,
         'logged_in': True,
-        'flag_str': task.flag,
+        'flag_str': ''.join(secrets.choice(string.ascii_letters) for i in range(random.randint(5,15))),
     }
     
     await create_ShopItem(client=client,logger=None,db=db,kwargs=shop_item_kwargs)
