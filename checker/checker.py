@@ -256,11 +256,11 @@ async def exploit_license(searcher: FlagSearcher, client: AsyncClient, db: Chain
     except RequestError:
         raise MumbleException(f"Error while viewing license of user item with id: {item_id}")
 
-    
-    flag = searcher.search_flag(response.text)
-    if flag:
-        return flag
 
+    match = re.findall(searcher._flag_re.pattern.decode('utf-8'),response.text)
+    if match[0]:
+        return match[0]
+        
     raise MumbleException("Could not find flag in license_file")  
 
 
