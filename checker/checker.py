@@ -68,7 +68,7 @@ async def getflag_license(task: GetflagCheckerTaskMessage, client: AsyncClient, 
     try: 
         object = await db.get("license_flag")
     except DBSearchError:
-        raise MumbleException("Could not retrieve data from ChainDB!")
+        raise InternalErrorException("Could not retrieve data from ChainDB!")
 
     login_kwargs={
         'username': object['user'],
@@ -119,7 +119,7 @@ async def getflag_notes(task: GetflagCheckerTaskMessage, client: AsyncClient, db
     try: 
         object = await db.get("note_flag")
     except DBSearchError:
-        raise MumbleException("Could not retrieve data from ChainDB!")
+        raise InternalErrorException("Could not retrieve data from ChainDB!")
 
     login_kwargs={
         'username': object['user'],
