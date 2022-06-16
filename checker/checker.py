@@ -72,7 +72,7 @@ async def getflag_license(task: GetflagCheckerTaskMessage, client: AsyncClient, 
 
     login_kwargs={
         'username': object['user'],
-        'password': object['password1'],
+        'password': object['password'],
     }
     await login(client=client,logger=None,db=db,kwargs=login_kwargs)
     try:
