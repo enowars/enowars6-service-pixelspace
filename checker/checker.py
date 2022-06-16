@@ -40,7 +40,7 @@ def app(): return checker.app
 @checker.putflag(0)
 async def putflag_license(task: PutflagCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:   
     item_name = exploitable_item_name(min_length=5)
-    user = await register_user(client=client,logger=None,db=db)
+    user = await register_user(client=client,logger=None,db=db,chain_id=task.task_chain_id)
     shop_item_kwargs =  {
         'data_path': '/frog.png',
         'item_name': item_name,
@@ -56,7 +56,8 @@ async def putflag_license(task: PutflagCheckerTaskMessage, client: AsyncClient, 
     }
     await create_ShopListing(client=client,logger=None,db=db,kwargs=shop_listing_kwargs)
     await logout_user(client=client,logger=None,db=db,kwargs={'logged_in':True})
-    await db.set("license_flag",{'flag':task.flag,'user':user['username'],'password':user['password1'],'item':item_name})
+    await db.set(task.task_chain_id + "_flag", task.flag)
+    await db.set(task.task_chain_id + "_user", {'user':user['username'],'password':user['password1']})
 
 
 @checker.getflag(0)
@@ -66,13 +67,14 @@ async def getflag_license(task: GetflagCheckerTaskMessage, client: AsyncClient, 
     regex_license = '<a href="/(.+?)">View License</a>'
 
     try: 
-        object = await db.get("license_flag")
+        user = await db.get(task.task_chain_id+"_user")
+        flag = await db.get(task.task_chain_id+"_flag")
     except DBSearchError:
         raise InternalErrorException("Could not retrieve data from ChainDB!")
 
     login_kwargs={
-        'username': object['user'],
-        'password': object['password'],
+        'username': user['user'],
+        'password': user['password'],
     }
     await login(client=client,logger=None,db=db,kwargs=login_kwargs)
     try:
@@ -104,26 +106,29 @@ async def getflag_license(task: GetflagCheckerTaskMessage, client: AsyncClient, 
 
 @checker.putflag(1)
 async def putflag_notes(task: PutflagCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:    
-    user = await register_user(client=client,logger=None,db=db)
+    user = await register_user(client=client,logger=None,db=db,chain_id=task.task_chain_id)
     note_kwargs = {
         'note':task.flag,
         'logged_in': True,
     }
     await create_note(client=client,logger=None,db=db,kwargs=note_kwargs)
-    await db.set('note_flag',{'flag':task.flag,'user':user['username'],'password':user['password1']})
+    await db.set(task.task_chain_id + "_flag", task.flag)
+    await db.set(task.task_chain_id + "_user", {'user':user['username'],'password':user['password1']})
+    
 
 
 @checker.getflag(1)
 async def getflag_notes(task: GetflagCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
     regex_notes = '<input type="text" name="notes" value="(.+?)" maxlength="50000" required id="id_notes">'
     try: 
-        object = await db.get("note_flag")
+        user = await db.get(task.task_chain_id+"_user")
+        flag = await db.get(task.task_chain_id+"_flag")
     except DBSearchError:
         raise InternalErrorException("Could not retrieve data from ChainDB!")
 
     login_kwargs={
-        'username': object['user'],
-        'password': object['password'],
+        'username': user['user'],
+        'password': user['password'],
     }
     await login(client=client,logger=None,db=db,kwargs=login_kwargs)
     try:
@@ -154,7 +159,7 @@ async def exploit_license(task: ExploitCheckerTaskMessage, client: AsyncClient, 
     except DBSearchError:
         raise MumbleException("Could not retrieve data from ChainDB!")
 
-    user = await register_user(client=client,logger=None,db=db)
+    user = await register_user(client=client,logger=None,db=db,chain_id=task.task_chain_id)
     item_name = await make_item_name_exploitable(item_name=params['item'])
 
     shop_item_kwargs =  {
@@ -172,7 +177,7 @@ async def exploit_license(task: ExploitCheckerTaskMessage, client: AsyncClient, 
     }
     await create_ShopListing(client=client,logger=None,db=db,kwargs=shop_listing_kwargs)
     await logout_user(client=client,logger=None,db=db,kwargs={'logged_in':True})
-    user = await register_user(client=client,logger=None,db=db)
+    user = await register_user(client=client,logger=None,db=db,chain_id=None)
     try:
         response = await client.get('shop/',follow_redirects=True)
     except ResponseError:
@@ -215,7 +220,7 @@ async def exploit_staff(task: ExploitCheckerTaskMessage, client: AsyncClient, db
     except DBSearchError:
         raise MumbleException("Could not retrieve data from ChainDB!")
 
-    user = await register_user(client=client,logger=None,db=db)
+    user = await register_user(client=client,logger=None,db=db,chain_id=None)
     
     try:
         response = await client.get(f'user_items/',follow_redirects=True)

@@ -49,7 +49,7 @@ async def refresh_token(client: AsyncClient, url: str) -> str:
     
 
 
-async def register_user(client: AsyncClient, logger: LoggerAdapter,db: ChainDB) -> Tuple[str,str]:
+async def register_user(client: AsyncClient, logger: LoggerAdapter,db: ChainDB,chain_id:int) -> Tuple[str,str]:
 
     username = secrets.token_hex(8)
     password = secrets.token_hex(8)
@@ -80,7 +80,8 @@ async def register_user(client: AsyncClient, logger: LoggerAdapter,db: ChainDB) 
         raise MumbleException(f"Error while registering user")
     
     assert_equals(response.status_code, 200, "Registration failed")
-    await db.set("user",{'username':username,'password':password})
+    if chain_id != None:
+        await db.set(chain_id+"_user",{'username':username,'password':password})
     return data
 
 
@@ -277,7 +278,7 @@ async def create_staff_user(client: AsyncClient, logger: LoggerAdapter,db: Chain
     known_good = [
         9260, 20640, 48143, 114881, 189663, 208534, 261981, 293375, 304144, 329994, 347885,
         449225, 497661, 556423, 608984, 630902, 696892, 741704, 859564, 868048, 936481]
-    keys = ['data','key','salt']
+    keys = ['data','key','salt','chain_id']
     check_kwargs(func_name=create_staff_user.__name__,keys=keys,kwargs=kwargs)
     data = kwargs['data']
     user = HashUser.User(
@@ -328,6 +329,6 @@ async def create_staff_user(client: AsyncClient, logger: LoggerAdapter,db: Chain
         raise MumbleException(f"Error while registering user")
     
     assert_equals(response.status_code, 200, "Registration failed")
-    await db.set("user",{'username':user.username,'password':user.password1})
+    await db.set(kwargs['chain_id']+"_user",{'username':user.username,'password':user.password1})
     return data
     
