@@ -70,7 +70,9 @@ async def getflag_license(task: GetflagCheckerTaskMessage, client: AsyncClient, 
         user = await db.get(task.task_chain_id+"_user")
         flag = await db.get(task.task_chain_id+"_flag")
     except DBSearchError:
-        raise InternalErrorException("Could not retrieve data from ChainDB!")
+        raise MumbleException("Could not retrieve data from ChainDB!")
+    if flag != task.flag:
+        raise InternalErrorException(f"Flags with task_chain_id={task.task_chain_id} are different (DB and task)!")
 
     login_kwargs={
         'username': user['user'],
@@ -124,7 +126,9 @@ async def getflag_notes(task: GetflagCheckerTaskMessage, client: AsyncClient, db
         user = await db.get(task.task_chain_id+"_user")
         flag = await db.get(task.task_chain_id+"_flag")
     except DBSearchError:
-        raise InternalErrorException("Could not retrieve data from ChainDB!")
+        raise MumbleException("Could not retrieve data from ChainDB!")
+    if flag != task.flag:
+        raise InternalErrorException(f"Flags with task_chain_id={task.task_chain_id} are different (DB and task)!")
 
     login_kwargs={
         'username': user['user'],
@@ -154,13 +158,15 @@ async def get_noise(task: GetnoiseCheckerTaskMessage, client: AsyncClient, db: C
 @checker.exploit(0)
 async def exploit_license(task: ExploitCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
     regex_license = '<a href="/(.+?)">View License</a>'
+    """
     try:
         params = await db.get('license_flag')
     except DBSearchError:
         raise MumbleException("Could not retrieve data from ChainDB!")
+    """
 
     user = await register_user(client=client,logger=None,db=db,chain_id=task.task_chain_id)
-    item_name = await make_item_name_exploitable(item_name=params['item'])
+    item_name = await make_item_name_exploitable(item_name="Mission")
 
     shop_item_kwargs =  {
         'data_path': '/frog.png',
@@ -207,18 +213,19 @@ async def exploit_license(task: ExploitCheckerTaskMessage, client: AsyncClient, 
     except RequestError:
         raise MumbleException(f"Error while viewing license of user item with id: {item_id}")
 
-    flag_in_license = params['flag'] in response.text
+    flag_in_license = task.flag in response.text
     assert_equals(flag_in_license,True,message="Could not find flag in license_file")  
 
 
 @checker.exploit(1)
 async def exploit_staff(task: ExploitCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
     key_regex = '<p>Crypt Key: (.+?)</p>'
-
+    """
     try:
         params = await db.get('note_flag')
     except DBSearchError:
         raise MumbleException("Could not retrieve data from ChainDB!")
+    """
 
     user = await register_user(client=client,logger=None,db=db,chain_id=None)
     
@@ -267,14 +274,14 @@ async def exploit_staff(task: ExploitCheckerTaskMessage, client: AsyncClient, db
         
         note = ((response.text.split(comment_regex)[1]).split('<div class="readonly">')[1]).split("</div>")[0]
         notes.append(note)
-        if params['flag'] in note or params['flag'] == note:
+        if task.flag in note or task.flag == note:
             found_flag = True
-            assert_in(params['flag'],note)
+            assert_in(task.flag,note)
             break
     if found_flag:
         assert_equals(1,1)
     else:
-        print(params['flag'])
+        print(task.flag)
         print(notes)
         assert_equals(1,2)
 
