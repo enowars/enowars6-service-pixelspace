@@ -278,7 +278,7 @@ async def create_staff_user(client: AsyncClient, logger: LoggerAdapter,db: Chain
     known_good = [
         9260, 20640, 48143, 114881, 189663, 208534, 261981, 293375, 304144, 329994, 347885,
         449225, 497661, 556423, 608984, 630902, 696892, 741704, 859564, 868048, 936481]
-    keys = ['data','key','salt','chain_id']
+    keys = ['data','key','salt']
     check_kwargs(func_name=create_staff_user.__name__,keys=keys,kwargs=kwargs)
     data = kwargs['data']
     user = HashUser.User(
@@ -329,6 +329,6 @@ async def create_staff_user(client: AsyncClient, logger: LoggerAdapter,db: Chain
         raise MumbleException(f"Error while registering user")
     
     assert_equals(response.status_code, 200, "Registration failed")
-    await db.set(kwargs['chain_id']+"_user",{'username':user.username,'password':user.password1})
+    #await db.set(kwargs['chain_id']+"_user",{'username':user.username,'password':user.password1})
     return data
     

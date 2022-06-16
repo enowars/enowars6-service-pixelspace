@@ -159,7 +159,7 @@ async def get_noise(task: GetnoiseCheckerTaskMessage, client: AsyncClient, db: C
 ############################## EXPLOITS ################################
 
 @checker.exploit(0)
-async def exploit_license(task: ExploitCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
+async def exploit_license(searcher: FlagSearcher, client: AsyncClient, db: ChainDB) -> None:
     regex_license = '<a href="/(.+?)">View License</a>'
     """
     try:
@@ -168,7 +168,7 @@ async def exploit_license(task: ExploitCheckerTaskMessage, client: AsyncClient, 
         raise MumbleException("Could not retrieve data from ChainDB!")
     """
 
-    user = await register_user(client=client,logger=None,db=db,chain_id=task.task_chain_id)
+    user = await register_user(client=client,logger=None,db=db,chain_id=None)
     item_name = await make_item_name_exploitable(item_name="Mission")
 
     shop_item_kwargs =  {
@@ -221,7 +221,7 @@ async def exploit_license(task: ExploitCheckerTaskMessage, client: AsyncClient, 
 
 
 @checker.exploit(1)
-async def exploit_staff(task: ExploitCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
+async def exploit_staff(searcher: FlagSearcher, client: AsyncClient, db: ChainDB,) -> None:
     key_regex = '<p>Crypt Key: (.+?)</p>'
     """
     try:
@@ -267,27 +267,18 @@ async def exploit_staff(task: ExploitCheckerTaskMessage, client: AsyncClient, db
     
     profiles = re.findall(profile_regex,response.text)
     comment_regex = '<label>Notes:</label>'
-    found_flag = False
-    notes = []
     for prof in profiles:
         try:
             response = await client.get(f'admin/pixels/profile/{int(prof)}/change/',follow_redirects=True)
         except ResponseError:
             raise MumbleException(f"EXPLOIT_NOTE - Error while requesting profile with num{int(prof)}!")
         
-        note = ((response.text.split(comment_regex)[1]).split('<div class="readonly">')[1]).split("</div>")[0]
-        notes.append(note)
-        if task.flag in note or task.flag == note:
-            found_flag = True
-            assert_in(task.flag,note)
-            break
-    if found_flag:
-        assert_equals(1,1)
-    else:
-        print(task.flag)
-        print(notes)
-        assert_equals(1,2)
+        
+        flag = searcher.search_flag(response.text)
+        if flag:
+            return flag
 
+    raise MumbleException("EXPLOIT_NOTE - Failed! No Flag Found!")
 ############################### HAVOCS #################################
 
 @checker.havoc(0)
