@@ -170,8 +170,9 @@ async def exploit_license(searcher: FlagSearcher, client: AsyncClient, db: Chain
     except ResponseError:
         raise MumbleException("EXPLOIT_LICENSE - Error while requesting endpoint shop!")
     
+    orig_name = re.findall(regex_item_name,response.text)[0]
 
-    item_name = await make_item_name_exploitable(item_name=re.findall(regex_item_name,response.text) )
+    item_name = await make_item_name_exploitable(item_name=orig_name )
 
     shop_item_kwargs =  {
         'data_path': '/frog.png',
