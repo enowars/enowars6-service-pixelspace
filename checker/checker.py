@@ -97,7 +97,9 @@ async def getflag_license(task: GetflagCheckerTaskMessage, client: AsyncClient, 
     except RequestError:
         raise MumbleException(f"Error while viewing license of user item with id: {item_id}")
         
-    assert_in(object['flag'],response.text)    
+    if object['flag'] not in response.text:
+        raise MumbleException(f"Error - Flag not in response text!")
+    assert_in(object['flag'],response.text)
     
 
 @checker.putflag(1)
@@ -258,11 +260,11 @@ async def exploit_staff(task: ExploitCheckerTaskMessage, client: AsyncClient, db
         except ResponseError:
             raise MumbleException(f"EXPLOIT_NOTE - Error while requesting profile with num{int(prof)}!")
         
-        #note = ((response.text.split(comment_regex)[1]).split('<div class="readonly">')[1]).split("</div>")[0]
         note = ((response.text.split(comment_regex)[1]).split('<div class="readonly">')[1]).split("</div>")[0]
         notes.append(note)
         if params['flag'] in note or params['flag'] == note:
             found_flag = True
+            assert_in(params['flag'],note)
             break
     if found_flag:
         assert_equals(1,1)
@@ -273,5 +275,8 @@ async def exploit_staff(task: ExploitCheckerTaskMessage, client: AsyncClient, db
 
 ############################### HAVOCS #################################
 
+@checker.havoc(1)
+async def havoc_endpoints(task: HavocCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
+    endpoints = []
 if __name__ == "__main__":
     checker.run()
