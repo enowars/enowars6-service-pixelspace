@@ -149,12 +149,49 @@ async def getflag_notes(task: GetflagCheckerTaskMessage, client: AsyncClient, db
 ####################### GETNOISE AND PUTNOISE #########################
 
 @checker.putnoise(0)
-async def put_noise(task: PutnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
-    assert_equals(1,2)
+async def put_noise_base_functions(task: PutnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
+    user = await register_user(client=client,logger=None,db=db,chain_id=None)
+    item_name = ''.join(secrets.choice(string.ascii_letters) for i in range(random.randint(5,15)))
+    shop_item_kwargs =  {
+        'data_path': '/frog.png',
+        'item_name': item_name,
+        'logged_in': True,
+        'flag_str': task.flag,
+    }
+    
+    await create_ShopItem(client=client,logger=None,db=db,kwargs=shop_item_kwargs)
+    shop_listing_kwargs = {
+        'item_name': item_name,
+        'item_price': random.randint(1,1000)/100,
+        'description': ''.join(secrets.choice(string.ascii_letters) for i in range(random.randint(5,25))),
+    }
+    await create_ShopListing(client=client,logger=None,db=db,kwargs=shop_listing_kwargs)
+    await logout_user(client=client,logger=None,db=db,kwargs={'logged_in':True})
+    await db.set(task.task_chain_id + "_item_name", item_name)
+    await db.set(task.task_chain_id + "_user", {'user':user['username'],'password':user['password1']})
 
 @checker.getnoise(0)
-async def get_noise(task: GetnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
-    assert_equals(1,2)
+async def get_noise_base_functions(task: GetnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
+    try: 
+        user = await db.get(task.task_chain_id+"_user")
+        item = await db.get(task.task_chain_id+"_item_name")
+    except KeyError:
+        raise MumbleException("Could not retrieve data from ChainDB!")
+    
+    login_kwargs={
+        'username': user['user'],
+        'password': user['password'],
+    }
+
+    await login(client=client,logger=None,db=db,kwargs=login_kwargs)
+
+    try:
+        response = await client.get('shop',follow_redirects=True)
+    except ResponseError:
+        raise MumbleException("GET_NOISE_BASE_FUNCTIONS - Error while requesting endpoint shop!")
+    if not item in response.text:
+        raise MumbleException("GET_NOISE_BASE_FUNCTIONS - Error while searching for previously enlisted item!")
+
 
 ############################## EXPLOITS ################################
 
