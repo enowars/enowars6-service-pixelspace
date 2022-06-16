@@ -97,9 +97,9 @@ async def getflag_license(task: GetflagCheckerTaskMessage, client: AsyncClient, 
     except RequestError:
         raise MumbleException(f"Error while viewing license of user item with id: {item_id}")
         
-    if object['flag'] not in response.text:
+    if task.flag not in response.text:
         raise MumbleException(f"Error - Flag not in response text!")
-    assert_in(object['flag'],response.text)
+    assert_in(task.flag,response.text)
     
 
 @checker.putflag(1)
@@ -132,7 +132,7 @@ async def getflag_notes(task: GetflagCheckerTaskMessage, client: AsyncClient, db
         raise MumbleException("Error while retrieving user items!")
 
     match = re.findall(regex_notes,response.text)[0]
-    assert_in(object['flag'],match)
+    assert_in(task.flag,match)
 
 ####################### GETNOISE AND PUTNOISE #########################
 
