@@ -72,7 +72,7 @@ async def getflag_license(task: GetflagCheckerTaskMessage, client: AsyncClient, 
     except DBSearchError:
         raise MumbleException("Could not retrieve data from ChainDB!")
     if flag != task.flag:
-        raise InternalErrorException(f"Flags with task_chain_id={task.task_chain_id} are different (DB and task)!")
+        raise MumbleException(f"Flags with task_chain_id={task.task_chain_id} are different (DB and task)!")
 
     login_kwargs={
         'username': user['user'],
@@ -128,7 +128,7 @@ async def getflag_notes(task: GetflagCheckerTaskMessage, client: AsyncClient, db
     except DBSearchError:
         raise MumbleException("Could not retrieve data from ChainDB!")
     if flag != task.flag:
-        raise InternalErrorException(f"Flags with task_chain_id={task.task_chain_id} are different (DB and task)!")
+        raise MumbleException(f"Flags with task_chain_id={task.task_chain_id} are different (DB and task)!")
 
     login_kwargs={
         'username': user['user'],
