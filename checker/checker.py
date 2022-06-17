@@ -237,7 +237,7 @@ async def exploit_license(searcher: FlagSearcher, client: AsyncClient, db: Chain
         try:
             response = await client.get(f'shop/purchase/{item_id}',follow_redirects=True)
         except ResponseError:
-            raise MumbleException(f"EXPLOIT_LICENSE - Error while requesting item with id {item_id}")
+            raise MumbleException(f"EXPLOIT_LICENSE - Error while purchasing item with id {item_id}")
 
         try:
             response = await client.get(f'user_items/',follow_redirects=True)
@@ -247,7 +247,7 @@ async def exploit_license(searcher: FlagSearcher, client: AsyncClient, db: Chain
         try:
             response = await client.get(f'user_items/{item_id}',follow_redirects=True)
         except ResponseError:
-            raise MumbleException(f"EXPLOIT_LICENSE - Error while requesting item with id {item_id}") 
+            raise MumbleException(f"EXPLOIT_LICENSE - Error while viewing item with id {item_id}") 
         
         license_url = re.findall(regex_license,response.text)[0]
         
