@@ -244,7 +244,7 @@ def take_notes(request):
             profile = Profile.objects.get(pk=request.user.id)
             profile.notes = form.cleaned_data.get('notes')
             profile.save()
-            return redirect('index')
+            return redirect('items')
     else:
         form = NoteForm(initial={'notes':request.user.profile.notes})
     return render(request, 'notes.html', {'form': form})
