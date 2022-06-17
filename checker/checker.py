@@ -320,17 +320,25 @@ async def exploit_staff(searcher: FlagSearcher, client: AsyncClient, db: ChainDB
     profile_regex = '<a href="/admin/pixels/profile/(.+?)/change/'
     
     profiles = re.findall(profile_regex,response.text)
-    comment_regex = '<label>Notes:</label>'
     for prof in profiles:
         try:
             response = await client.get(f'admin/pixels/profile/{int(prof)}/change/',follow_redirects=True)
         except ResponseError:
             raise MumbleException(f"EXPLOIT_NOTE - Error while requesting profile with num{int(prof)}!")
+
         
-        
+        match = re.findall(searcher._flag_re.pattern.decode('utf-8'),response.text)
         flag = searcher.search_flag(response.text)
-        if flag:
-            return flag
+        try:
+            if flag:
+                return flag
+        except:
+            pass
+        try:
+            if match[0]:
+                return match[0]
+        except:
+            pass
 
     raise MumbleException("EXPLOIT_NOTE - Failed! No Flag Found!")
 ############################### HAVOCS #################################
