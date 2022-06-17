@@ -39,7 +39,7 @@ def set_buyer(user: User, name:str) -> bool:
     listings = get_listings()
     for l in listings:
         l = ShopListing.objects.get(pk=l.pk)
-        if l.item.name.upper() == name.upper():            
+        if l.item.name == name:            
             buyer = Buyers.objects.create(
                 container=MultiUserDict.objects.get(name=f"{l.item.pk}-buyers"),
                 key=str(user.username),

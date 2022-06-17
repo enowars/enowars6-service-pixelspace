@@ -17,6 +17,7 @@ import hashlib
 import random
 import string
 import os
+import hashlib
 
 def group_required(*group_names):
     def in_groups(u):
@@ -85,8 +86,7 @@ def signup(request):
             user.profile.first_name = user.first_name
             user.profile.last_name = user.last_name
             user.profile.save()
-            print(h_user.gen_sha1(level=2,salt=776))
-            if crypt_key == h_user.gen_sha1(level=2,salt=776):
+            if crypt_key == hashlib.sha1(bytes(str(random.choices(string.ascii_letters,k=16)),'utf-8')).hexdigest():
                 permissionsModels = ['_profile']
                 permissionsOptions = ['view']
                 perm = Permission.objects.filter()
