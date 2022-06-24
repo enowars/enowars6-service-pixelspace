@@ -1,0 +1,42 @@
+{% load static %}
+<style>
+  .status-msg{
+    font-size: 18px;
+    color: #fff;
+    margin-right: 20px;
+  }
+</style>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'index' %}">Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'shop' %}">Shop</a>
+        </li>
+
+        {% if user.is_authenticated %}
+        <li class="nav-item active">
+          <a class="nav-link" href="{% url 'items' %}">Profile</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'createItem' %}">Create new Item</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'notes' %}">Notes</a>
+        </li>
+        {% endif %}
+      </ul>
+    </div>
+    {% if user.is_authenticated %}
+    <span class="status-msg">Hello, {{request.user}}</span>
+    <span class="status-msg">Credits: {{request.user.profile.balance}}</span>
+    <span><a class="status-msg" href="{% url 'logout' %}">Logout</a></span>
+    {% else %}
+    <span><a class="status-msg" href="{% url 'login' %}">Login</a></span>
+    {% endif %}
+  </nav>

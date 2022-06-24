@@ -1,9 +1,7 @@
-<h1>itempage</h1>
-{% if user.is_authenticated %}
-<p>Your Balance : {{ user.profile.balance }}</p>
-{% else %}
-<p>You are not logged in, hence you cannot buy this item</p>
-{% endif %}
+{% extends 'base.html' %}
+{% block content %}
+{% endblock %}
 <td>{{ item.name }}</td><br>
 <td><img src="{{ item.data.url }}"/></td><br>
 <td><a href="license/{{item.pk }}">View License</a></td>
+{% endblock %}

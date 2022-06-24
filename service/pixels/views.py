@@ -18,6 +18,8 @@ import hashlib
 import random
 import string
 import os
+from django.db import transaction
+
 
 def group_required(*group_names):
     def in_groups(u):
@@ -156,10 +158,11 @@ def create_listing(request,item_id):
         form = ShopListingForm()
     return render(request, 'enlist_item.html', {'form': form,'user_item':ShopItem.objects.get(pk=item_id)})
 
+@transaction.atomic
 def purchase(request,item_id):
     item = ShopListing.objects.raw(f"SELECT * FROM pixels_shoplisting WHERE id = {item_id}")[0]
     buyer = request.user
-    if Buyers.objects.raw(f"SELECT * FROM pixels_buyers WHERE user_id = {buyer.pk} AND item_id = {item_id}")[0]:
+    if len(Buyers.objects.raw(f"SELECT * FROM pixels_buyers WHERE user_id = {buyer.pk} AND item_id = {item_id}")) > 0:
         messages.error(request,'You already purchased this item!')
         return redirect('shop')
 
@@ -233,11 +236,8 @@ def license_access(request, item_id):
             response = FileResponse(item.cert_license)
             return response
         # For simple user, only their documents can be accessed
-        buyers = Buyers.objects.raw(f"SELECT * FROM pixels_buyers WHERE item_id = {item.pk}")
-        for b in buyers:
-            if b.user == user:
-                access_granted = True
-                break
+        if len(Buyers.objects.raw(f"SELECT * FROM pixels_buyers WHERE item_id = {item.pk} AND user_id = {user.pk}")) > 0:
+            access_granted = True  
     if access_granted:
         response = FileResponse(item.cert_license)
         return response

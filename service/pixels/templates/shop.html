@@ -1,11 +1,6 @@
+{% extends 'base.html' %}
+{% block content %}
 <h1>Shoppage</h1>
-<a href="../">Home</a>
-{% if user.is_authenticated %}
-    <p>Welcome, {{ user.get_username }}. Thanks for logging in. Your Balance : {{ user.profile.balance }}</p>
-    <p><a href="../user_items">Profile</a></p>
-{% else %}
-    <p>Welcome, new user. Please <a href="../login">log in.</a> </p>
-{% endif %}
 {% if messages %}
 
     {% for message in messages %}
@@ -16,6 +11,14 @@
 {% if shop_items %}
 There are {{shop_items|length}} objects in the shop:
 <br>
+<p id="demo"></p>
+<script>
+    var w = window.innerWidth;
+    var h = window.innerHeight;
+    
+    var x = document.getElementById("demo");
+    x.innerHTML = "Browser width: " + w + ", height: " + h + ".";
+</script>
 {% for s in shop_items %}
 <br>
 <td><h4>{{ s.item.name }}</h4></td><br>
@@ -27,3 +30,4 @@ There are {{shop_items|length}} objects in the shop:
 <br>
 {% endfor %}
 {% endif %}
+{% endblock %}

@@ -1,4 +1,7 @@
+{% extends 'base.html' %}
+{% block content %}
 <h1>Profile</h1>
+
 {% if user.is_authenticated %}
 <a href="../">Home</a> <a href="../shop">Shop</a> <a href="../new_item">Create new Item</a><br>
 <p>Crypt Key: {{user.profile.cryptographic_key}}</p>
@@ -42,4 +45,5 @@ You have {{user_bought|length}} bought objects:<br><br>
 <td><a href="{{s.pk}}">View Item</a> <a href="review/{{s.item.pk}}">Write a review</a></td>
 {% endfor %}
 {% endif %}
+{% endblock %}
 

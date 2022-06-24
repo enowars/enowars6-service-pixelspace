@@ -18,7 +18,7 @@ class ShopItem(models.Model):
 
 class ShopListing(models.Model):
     item = models.OneToOneField(ShopItem, on_delete=models.CASCADE)
-    price = models.FloatField(validators=[MinValueValidator(0.0),MaxValueValidator(100000000001.0)])
+    price = models.IntegerField(validators=[MinValueValidator(1),MaxValueValidator(10000000000000)])
     description = models.CharField(max_length=300)
     sold = models.IntegerField(validators=[MinValueValidator(0)],default=0)
 
@@ -38,14 +38,14 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     first_name = models.CharField(max_length=20)
     last_name = models.CharField(max_length=20)
-    balance = models.FloatField(validators=[MinValueValidator(0.0)])
+    balance = models.IntegerField(validators=[MinValueValidator(0),MaxValueValidator(2147483647)])
     cryptographic_key = models.CharField(max_length=1000,default="None")
     notes = models.CharField(max_length=50000,default="You can enter your notes here...")
 
 @receiver(post_save,sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
-        Profile.objects.create(user=instance,balance=1.0)
+        Profile.objects.create(user=instance,balance=100)
 
 @receiver(post_save, sender=User)
 def save_user_profile(sender,instance,**kwargs):

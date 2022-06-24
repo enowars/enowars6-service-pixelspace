@@ -1,14 +1,15 @@
+{% extends 'base.html' %}
 {# Load the tag library #}
 {% load django_bootstrap5 %}
 
 {# Load CSS and JavaScript #}
 {% bootstrap_css %}
 {% bootstrap_javascript %}
-
+{% block content %}
 {# Display django.contrib.messages as Bootstrap alerts #}
 {% bootstrap_messages %}
 <a href="../../">Home</a><br>
-{% block content %}
+
 
   <h2>NEW ITEM</h2>
   <form method="post" enctype="multipart/form-data">

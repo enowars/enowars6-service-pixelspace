@@ -1,15 +1,7 @@
-{% block title %}Home{% endblock %}
-
+{% extends 'base.html' %}
 
 {% block content %}
-{% if user.is_authenticated %}
-  Hi {{ user.username }}!
-  <a href="user_items">Profile</a> <a href="shop">shop</a> <a href="logout">logout</a><br>
-  
-  
-{% else %}
-  <p>You are not logged in</p>
-  <a href="login">Log In</a>
-  <a href="signup">Register</a>
-{% endif %}
+Welcome to Pixelspace!
+You do not have an account yet?
+Register <a href="{% url 'create_account' %}">here</a>
 {% endblock %}

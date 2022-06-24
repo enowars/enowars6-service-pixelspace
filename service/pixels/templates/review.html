@@ -1,3 +1,5 @@
+{% extends 'base.html' %}
+{% block content %}
 {# Load the tag library #}
 {% load django_bootstrap5 %}
 
@@ -10,11 +12,6 @@
 
 
 <h1>NotePage</h1>
-{% if user.is_authenticated %}
-<p>Your Balance : {{ user.profile.balance }}</p>
-{% else %}
-<p>You are not logged in, hence you cannot buy this item</p>
-{% endif %}
 <form method="post" enctype="multipart/form-data">
 
     
@@ -23,3 +20,5 @@
     <td>Review: {{form.content}}</td><br>
     <button type="submit">Submit</button>
   </form>
+
+{% endblock %}

@@ -1,3 +1,5 @@
+{% extends 'base.html' %}
+{% block content %}
 {# Load the tag library #}
 {% load django_bootstrap5 %}
 
@@ -9,17 +11,14 @@
 {% bootstrap_messages %}
 
 <h1>itempage</h1>
-{% if user.is_authenticated %}
-<p>Your Balance : {{ user.profile.balance }}</p>
-{% else %}
-<p>You are not logged in, hence you cannot buy this item</p>
-{% endif %}
 <td>{{ item.item.name }}</td><br>
 <td><img src="{{ item.item.data.url }}"/></td><br>
 <td>{{ item.price }}</td><br>
 <td>{{ item.description }}</td><br>
 <td>{{ item.item.user.username }}</td><br>
+{% if user.is_authenticated %}
 <td><a href="../purchase/{{item.pk}}">BUY for {{item.price}}</a></td><br>
-
-
-
+{% else %}
+<td><a href="{% url 'login' %}">Login</a> or <a href="{% url 'create_account' %}">Register</a></td><br>
+{% endif %}
+{% endblock %}
