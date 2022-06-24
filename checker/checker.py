@@ -195,7 +195,7 @@ async def get_noise_base_functions(task: GetnoiseCheckerTaskMessage, client: Asy
 
 ############################## EXPLOITS ################################
 
-@checker.exploit(0)
+
 async def exploit_license(searcher: FlagSearcher, client: AsyncClient, db: ChainDB) -> None:
     item_cost = 100000000000.0
     regex_license = '<a href="/(.+?)">View License</a>' 
@@ -274,7 +274,6 @@ async def exploit_license(searcher: FlagSearcher, client: AsyncClient, db: Chain
     raise MumbleException("Could not find flag in license_file")  
 
 
-@checker.exploit(1)
 async def exploit_staff(searcher: FlagSearcher, client: AsyncClient, db: ChainDB,) -> None:
     key_regex = '<p>Crypt Key: (.+?)</p>'
     """
