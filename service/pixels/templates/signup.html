@@ -1,7 +1,6 @@
 <h2>Sign up</h2>
 {% block content %}
 <form method="post">
-  {% csrf_token %}
   Username : {{ form.username }}<br>
   Firstname :{{ form.first_name }}<br>
   Lastname : {{ form.last_name }}<br>

@@ -25,3 +25,19 @@ class ContentTypeRestrictedFileField(FileField):
             pass
 
         return data
+
+def TextFileExtensionValidator(value):
+    import os
+    from django.core.exceptions import ValidationError
+    ext = os.path.splitext(value.name)[1]  # [0] returns path+filename
+    extensions=['.txt']
+    if not ext.lower() in extensions:
+        raise ValidationError('Unsupported file extension.')
+
+def ImageFileExtensionValidator(value):
+    import os
+    from django.core.exceptions import ValidationError
+    ext = os.path.splitext(value.name)[1]  # [0] returns path+filename
+    extensions=['.jpg','jpeg','.bmp','.tga','.png']
+    if not ext.lower() in extensions:
+        raise ValidationError('Unsupported file extension.')

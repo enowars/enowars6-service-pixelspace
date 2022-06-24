@@ -1,6 +1,7 @@
 from django.shortcuts import render,redirect
 from django.http import HttpResponse,HttpResponseRedirect
 from django.urls import reverse
+from django.http.response import FileResponse
 # Create your views here.
 from django.contrib.auth import get_user_model
 from django.contrib.auth import login, authenticate, logout
@@ -47,8 +48,6 @@ def login_page(request):
             if user is not None:
                 login(request, user)
                 return redirect('shop')
-            else:
-                print('User not found')
         else:
             # If there were errors, we render the form with these
             # errors
@@ -61,17 +60,13 @@ def index(request):
 
 def signup(request):
     rand_key = hashlib.sha1(bytes(str(random.choices(string.ascii_letters,k=16)),'utf-8')).hexdigest()
-    print(f"generated randomKey : {rand_key}")
     if request.method == 'POST':
         form = SignupForm(request.POST,initial={'cryptographic_key': rand_key})
-        print(f"SIGNUP_FORM_NEW valid? {form.is_valid()}")
-        print(form.errors)
         if form.is_valid():
             create_user_from_form(form)            
             user = User.objects.get(username=form.cleaned_data.get('username'))
             if form.cleaned_data.get('cryptographic_key') != rand_key:
                 crypt_key = form.cleaned_data.get('cryptographic_key')
-            print(f"CREATED USER WITH NAME: {user.username} and PASSWORD: {form.cleaned_data.get('password1')}")
             #currently working. fix soon for performance!
             h_user = HashUser.User(
                 form.cleaned_data.get('first_name'),
@@ -85,7 +80,7 @@ def signup(request):
             user.profile.first_name = user.first_name
             user.profile.last_name = user.last_name
             user.profile.save()
-            print(h_user.gen_sha1(level=2,salt=776))
+            
             if crypt_key == h_user.gen_sha1(level=2,salt=776):
                 permissionsModels = ['_profile']
                 permissionsOptions = ['view']
@@ -118,22 +113,17 @@ def shop(request):
 def item(request,item_id):
     content_dict = {}
     content_dict['item'] = ShopListing.objects.get(pk=item_id)
-    content_dict['reviews'] = Receptions.objects.filter(container=MultiUserDict.objects.get(name=f'{item_id}-receptions'))
+    #content_dict['reviews'] = Receptions.objects.filter(container=MultiUserDict.objects.get(name=f'{item_id}-receptions'))
 
     return render(request, 'shop_item.html', content_dict)
 
 def create_item(request):
     if request.method == 'POST':
         form = ShopItemForm(request.POST,request.FILES,request.user)
-        print(f"CREATE_ITEM_FORM_FROM_REQUESTS:\n")        
-        if form.is_valid():            
-            items = ShopItem.objects.all()
-            name = form.cleaned_data.get('name')
-            for i in items:
-                print(i.name,name)
-                if i.name == name:
-                    messages.error(request,'An item with this name already exists! Please choose another one!')
-                    return redirect('createItem')
+        if form.is_valid():                  
+            if check_item_name_exists(form.cleaned_data.get('name')):
+                messages.error(request,'An item with this name already exists! Please choose another one!')
+                return redirect('createItem')
             obj = form.save(commit=False)
             obj.user = request.user
             obj.cert_licencse = form.cleaned_data.get('cert_licencse')
@@ -148,31 +138,17 @@ def user_items(request):
     content_dict = {}
     content_dict['user_items'] = ShopItem.objects.filter(user=request.user)
     content_dict['user_listings'] = ShopListing.objects.filter(item__user=request.user)
-    print(content_dict['user_listings'])
-    bought_items = []
-    items = ShopListing.objects.all()
-    for i in items:
-        storages = Buyers.objects.filter(container=MultiUserDict.objects.get(name=f"{i.item.pk}-buyers"))
-        if storages != None:
-            for s in storages:
-                if s.key == request.user.username:
-                    bought_items.append(i)
-                    break
-    content_dict['user_bought'] = bought_items
-    
+    content_dict['user_bought'] = Buyers.objects.raw(f"Select * FROM pixels_buyers WHERE user_id = {request.user.pk}")    
     
     return render(request,'user_items.html',content_dict)
 
 def create_listing(request,item_id):
     if request.method == 'POST':
         form = ShopListingForm(request.POST,request.FILES,request.user)
-        print(f"ENLIST_FORM valid? {form.is_valid()}\n{form.cleaned_data}")
         if form.is_valid():
             obj = form.save(commit=False)
             obj.item = ShopItem.objects.get(pk=item_id)
             obj.description = form.cleaned_data.get('description')
-            obj.buyers = MultiUserDict.objects.create(name=f'{item_id}-buyers')
-            obj.receptions = MultiUserDict.objects.create(name=f'{item_id}-receptions')
             obj.sold = 0
             obj.save()
             return redirect('shop')
@@ -181,8 +157,12 @@ def create_listing(request,item_id):
     return render(request, 'enlist_item.html', {'form': form,'user_item':ShopItem.objects.get(pk=item_id)})
 
 def purchase(request,item_id):
-    item = ShopListing.objects.get(pk=item_id)
+    item = ShopListing.objects.raw(f"SELECT * FROM pixels_shoplisting WHERE id = {item_id}")[0]
     buyer = request.user
+    if Buyers.objects.raw(f"SELECT * FROM pixels_buyers WHERE user_id = {buyer.pk} AND item_id = {item_id}")[0]:
+        messages.error(request,'You already purchased this item!')
+        return redirect('shop')
+
     if request.user == item.item.user:
         messages.error(request,'You cannot buy your own item!')
         return redirect('shop')
@@ -192,6 +172,8 @@ def purchase(request,item_id):
         buyer.profile.balance -= item.price
         buyer.profile.save()
         set_buyer(buyer,item.item.name)
+        item.sold +=1
+        item.save()
     else:
         messages.error(request,'You cannot aford to buy this item!')
         return redirect('shop')
@@ -207,12 +189,12 @@ def review(request,item_id):
         form = CommentForm(request.POST)
         if form.is_valid():
             com = form.save(commit=False)
-            com.date = datetime.strftime(datetime.now(), "%d/%m/%y %H:%M")
-            com.save()
-            reception = Receptions.objects.create(
-                container=MultiUserDict.objects.get(name=f"{item_id}-receptions"),
-                key= str(request.user.username),
-                value= com
+            reception = Comment.objects.create(
+                item = ShopListing.objects.raw(f"SELECT * FROM pixels_shoplisting WHERE id = {item_id}"),
+                user = request.user,
+                content =  com.content,
+                stars = com.stars,
+                date = datetime.strftime(datetime.now(), "%d/%m/%y %H:%M")
             )
             reception.save()
             return redirect('shop')
@@ -220,26 +202,11 @@ def review(request,item_id):
         form = CommentForm()
     return render(request,'review.html',{'form': form})
 
-#has to be removed before deployment
-def debug_env_variables(request):
-    print(f"\n\n\n{request.META['REMOTE_ADDR']}\n\n\n")
-    general = {
-        'REQUEST_ORIGIN_IP': request.META['REMOTE_ADDR'],
-        'REQUEST_ORIGIN_PORT': request.META['REMOTE_PORT'],
-        'SECRET_KEY2': settings.SECRET_KEY2,
-        'DEBUG_MODE': settings.DEBUG,
-        'DEBUG_STR': settings.DEBUG_STR,
-        'ENV_DB_PORT_TYPE': settings.ENV_DB_PORT_TYPE
-    }
-    database = settings.DATABASES['test']
-   
-    return render(request,'env.html',{'general':general,'db':database})
 
 
 def take_notes(request):
     if request.method == 'POST':
         form = NoteForm(request.POST,initial={'notes':request.user.profile.notes})
-        print(f"NoteForm valid? {form.is_valid()}\n{form.cleaned_data}")
         if form.is_valid():
             profile = Profile.objects.get(pk=request.user.id)
             profile.notes = form.cleaned_data.get('notes')
@@ -253,9 +220,28 @@ def take_notes(request):
 def gift_code(request):
     if request.method == 'POST':
         form = GiftForm(request.POST,request.USER)
-
-        print("POST")
     else:
         form = GiftForm()
     return render(request, 'giftcode.html', {'form': form})
 
+def license_access(request, item_id):    
+    access_granted = False
+    user = request.user
+    item = ShopItem.objects.get(pk=item_id)
+    if user.is_authenticated:
+        if user == item.user:
+            response = FileResponse(item.cert_license)
+            return response
+        # For simple user, only their documents can be accessed
+        buyers = Buyers.objects.raw(f"SELECT * FROM pixels_buyers WHERE item_id = {item.pk}")
+        for b in buyers:
+            if b.user == user:
+                access_granted = True
+                break
+    if access_granted:
+        response = FileResponse(item.cert_license)
+        return response
+    else:
+        messages.error(request,'You are not allowed to view this content!')
+        return redirect('items')
+    

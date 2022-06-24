@@ -7,12 +7,35 @@ from django.contrib.auth import password_validation
 from django.contrib.auth.models import User
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.validators import UnicodeUsernameValidator
+from .validators import ContentTypeRestrictedFileField, TextFileExtensionValidator, ImageFileExtensionValidator
 
 
 class ShopItemForm(forms.ModelForm):
+    name = forms.CharField(
+        max_length=50,
+        min_length=5,
+        required=True,
+        help_text="Enter the name of your item",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Inser item name...',
+        }))
+
+    cert_license = forms.FileField(
+        allow_empty_file=False,
+        required=True,
+        validators=[TextFileExtensionValidator]
+        )
+    
+    data = forms.ImageField(
+        allow_empty_file=False,
+        required=True,
+        validators=[ImageFileExtensionValidator]
+        )
+
     class Meta:
         model = ShopItem
-        fields = ['name','cert_licencse','data','data_name']
+        fields = ['name','cert_license','data']
 
 class ShopListingForm(forms.ModelForm):
     class Meta:

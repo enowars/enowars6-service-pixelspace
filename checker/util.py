@@ -33,22 +33,7 @@ def check_kwargs(func_name: str ,keys: list, kwargs):
             raise MisconfigurationError(f"FUNC: {func_name} - Kwargs has no key <{key}> !")
             return
 
-async def refresh_token(client: AsyncClient, url: str) -> str:
-    token =""
-    try:
-        response = await client.get(url,follow_redirects=True)
-        try:            
-            token = response.cookies['csrftoken']    
-        except CSRFRefreshError:
-            raise MumbleException(f"Error while requesting new token from {url} - No cookie value!")
-    except RequestError:
-        raise MumbleException(f"Error while requesting new token from {url} - Response failed!")
-    return token
-        
-        
-    
-
-
+     
 async def register_user(client: AsyncClient, logger: LoggerAdapter,db: ChainDB,chain_id:int) -> Tuple[str,str]:
 
     username = secrets.token_hex(8)
@@ -67,7 +52,6 @@ async def register_user(client: AsyncClient, logger: LoggerAdapter,db: ChainDB,c
         "email": email,
         "cryptographic_key": key,
         "next/": "shop/",
-        "csrfmiddlewaretoken": await refresh_token(client,"signup/")
     }
 
     headers={
@@ -93,7 +77,6 @@ async def login(client: AsyncClient, logger: LoggerAdapter, db: ChainDB,kwargs) 
         "username": kwargs['username'],
         "password": kwargs['password'],
         "next/": "shop/",
-        "csrfmiddlewaretoken": await refresh_token(client,"login/")
     }
 
     headers={
@@ -114,8 +97,6 @@ async def create_ShopItem(client: AsyncClient, logger: LoggerAdapter, db: ChainD
 
     if kwargs['logged_in'] == False:
         await login(client=client,logger=logger,db=db)
-        data={"csrfmiddlewaretoken": await refresh_token(client,"shop/")}
-        headers={"Referer": f"{client.base_url}/shop/"}    
 
         try:
             response = await client.get('user_item/',follow_redirects=True)
@@ -124,9 +105,6 @@ async def create_ShopItem(client: AsyncClient, logger: LoggerAdapter, db: ChainD
         
         assert_equals(response.status_code, 200,"Getting User Items Failed!")
 
-
-    data={"csrfmiddlewaretoken": await refresh_token(client,"user_items/")}
-    headers={"Referer": f"{client.base_url}/user_items/"}   
 
     try:
         response = await client.get('new_item/',follow_redirects=True)
@@ -140,7 +118,6 @@ async def create_ShopItem(client: AsyncClient, logger: LoggerAdapter, db: ChainD
 
 
     data={
-        'csrfmiddlewaretoken': await refresh_token(client,"new_item/"),
         'name': kwargs['item_name'],
         'data_name': data_name,
     }
@@ -191,7 +168,6 @@ async def create_ShopListing(client: AsyncClient, logger: LoggerAdapter, db: Cha
         data = {
             'price': kwargs['item_price'],
             'description': kwargs['description'],
-            'csrfmiddlewaretoken': await refresh_token(client,f'user_items/enlist/{item_id}'),
             'next': 'shop/',
         }
 
@@ -213,7 +189,6 @@ async def create_note(client: AsyncClient, logger: LoggerAdapter, db: ChainDB,kw
 
     data = {
         'notes': kwargs['note'],
-        'csrfmiddlewaretoken': await refresh_token(client,"notes/"),
     }
 
     try:
@@ -316,7 +291,6 @@ async def create_staff_user(client: AsyncClient, logger: LoggerAdapter,db: Chain
         "email": user.email,
         "cryptographic_key": user.gen_sha1(level=2,salt=kwargs['salt']),
         "next/": "shop/",
-        "csrfmiddlewaretoken": await refresh_token(client,"signup/")
     }
 
     headers={

@@ -1,4 +1,3 @@
-{% csrf_token %}
 <h1>itempage</h1>
 {% if user.is_authenticated %}
 <p>Your Balance : {{ user.profile.balance }}</p>
@@ -7,4 +6,4 @@
 {% endif %}
 <td>{{ item.name }}</td><br>
 <td><img src="{{ item.data.url }}"/></td><br>
-<td><a href="{{item.cert_licencse.url }}">View License</a></td>
+<td><a href="license/{{item.pk }}">View License</a></td>

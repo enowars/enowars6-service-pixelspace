@@ -8,7 +8,6 @@
 {# Display django.contrib.messages as Bootstrap alerts #}
 {% bootstrap_messages %}
 
-{% csrf_token %}
 <h1>itempage</h1>
 {% if user.is_authenticated %}
 <p>Your Balance : {{ user.profile.balance }}</p>

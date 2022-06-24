@@ -7,9 +7,6 @@ from exceptions import GenericException,PixelsException
 ###################
 
 
-class CSRFRefreshError(GenericException):
-    pass
-
 class MisconfigurationError(GenericException):
     pass
 

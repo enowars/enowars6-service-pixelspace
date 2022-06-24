@@ -8,7 +8,7 @@
 {# Display django.contrib.messages as Bootstrap alerts #}
 {% bootstrap_messages %}
 
-{% csrf_token %}
+
 <h1>NotePage</h1>
 {% if user.is_authenticated %}
 <p>Your Balance : {{ user.profile.balance }}</p>
@@ -16,7 +16,7 @@
 <p>You are not logged in, hence you cannot buy this item</p>
 {% endif %}
 <form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
+
     
     
     <td>Stars: {{form.stars}}</td><br>

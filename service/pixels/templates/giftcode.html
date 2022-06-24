@@ -8,7 +8,6 @@
 {# Display django.contrib.messages as Bootstrap alerts #}
 {% bootstrap_messages %}
 
-{% csrf_token %}
 <h1>itempage</h1>
 {% if user.is_authenticated %}
 <p>Your Balance : {{ user.profile.balance }}</p>
@@ -18,7 +17,6 @@
 {% endif %}
 <form method="post" enctype="multipart/form-data">
 
-    {% csrf_token %}
     {% bootstrap_form form %}
     {% bootstrap_button button_type="submit" content="OK" %}
     {% bootstrap_button button_type="reset" content="Cancel" %}
