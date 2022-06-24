@@ -19,15 +19,15 @@ There are {{shop_items|length}} objects in the shop:
     var x = document.getElementById("demo");
     x.innerHTML = "Browser width: " + w + ", height: " + h + ".";
 </script>
-{% for s in shop_items %}
-<br>
-<td><h4>{{ s.item.name }}</h4></td><br>
-<td><img src="{{ s.item.data.url }}"/></td><br>
-<td>{{ s.price }}</td><br>
-<td>{{ s.description }}</td><br>
-<td><a href="{{s.pk}}">View item</a></td><br>
-<td>{{ s.sold }} sold</td><br>
-<br>
+{% for k,s in shop_items.items %}
+    <td><h4>{{ s.item.item.name }} by {{s.item.item.user.username}}</h4></td><br>
+    <td><img src="{{ s.item.item.data.url }}"/></td><br>
+    <td>Price: {{ s.item.price }}</td><br>
+    <td>Description: {{ s.item.description }}</td><br>
+    <ts>Rating: {{ s.rating }} (avg. from {{ s.num_reviews }})</ts>
+    <td><a href="{{s.item.pk}}">View item</a></td><br>
+    <td>{{ s.item.sold }} sold</td><br>
+    <br>
 {% endfor %}
 {% endif %}
 {% endblock %}

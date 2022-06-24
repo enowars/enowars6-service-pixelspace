@@ -110,13 +110,31 @@ def signup(request):
     return render(request, 'signup.html', {'form': form})
 
 def shop(request):
-    return render(request,'shop.html',{'shop_items': ShopListing.objects.all()})
+    avg_rating = 0
+    shop_items = {}
+    items = ShopListing.objects.all()
+    for i,item in enumerate(items):
+        revs = Comment.objects.raw(f"SELECT * FROM pixels_comment WHERE item_id = {item.pk}")
+        for r in revs:
+            avg_rating += r.stars
+        avg_rating /= len(revs)
+        shop_items[i] = {
+            'id': i,
+            'rating': avg_rating,
+            'num_reviews': len(revs),
+            'item': item,
+        }
+    return render(request,'shop.html',{'shop_items':shop_items})
 
 def item(request,item_id):
+    avg_rating = 0
     content_dict = {}
     content_dict['item'] = ShopListing.objects.get(pk=item_id)
-    #content_dict['reviews'] = Receptions.objects.filter(container=MultiUserDict.objects.get(name=f'{item_id}-receptions'))
-
+    content_dict['reviews'] = Comment.objects.raw(f"SELECT * FROM pixels_comment WHERE item_id = {item_id}")
+    for r in content_dict['reviews']:
+        avg_rating += r.stars
+    avg_rating /= len(content_dict['reviews'])
+    content_dict['rating'] = avg_rating
     return render(request, 'shop_item.html', content_dict)
 
 def create_item(request):
@@ -193,7 +211,7 @@ def review(request,item_id):
         if form.is_valid():
             com = form.save(commit=False)
             reception = Comment.objects.create(
-                item = ShopListing.objects.raw(f"SELECT * FROM pixels_shoplisting WHERE id = {item_id}"),
+                item = ShopListing.objects.raw(f"SELECT * FROM pixels_shoplisting WHERE item_id = {item_id}")[0],
                 user = request.user,
                 content =  com.content,
                 stars = com.stars,

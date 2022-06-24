@@ -1,4 +1,6 @@
 {% extends 'base.html' %}
+
+{% load static %}
 {% block content %}
 {# Load the tag library #}
 {% load django_bootstrap5 %}
@@ -7,18 +9,86 @@
 {% bootstrap_css %}
 {% bootstrap_javascript %}
 
-{# Display django.contrib.messages as Bootstrap alerts #}
 {% bootstrap_messages %}
 
-<h1>itempage</h1>
-<td>{{ item.item.name }}</td><br>
-<td><img src="{{ item.item.data.url }}"/></td><br>
-<td>{{ item.price }}</td><br>
-<td>{{ item.description }}</td><br>
-<td>{{ item.item.user.username }}</td><br>
-{% if user.is_authenticated %}
-<td><a href="../purchase/{{item.pk}}">BUY for {{item.price}}</a></td><br>
-{% else %}
-<td><a href="{% url 'login' %}">Login</a> or <a href="{% url 'create_account' %}">Register</a></td><br>
-{% endif %}
-{% endblock %}
+
+<style>
+    .miniature-pic{
+        max-width: 200px;
+        max-height: 200px;
+        margin: 0 auto;
+    }
+</style>
+
+<br>
+<div class="row">
+    <div class="col-md-3">
+        <div class="card card-body">
+            <a class="btn btn-warning" href ="{% url 'shop' %}">&#8592; Back to Shop</a>
+            <hr>
+            <h3 style="text-align: center;">{{ item.item.name }}</h3>
+            <h6 style="text-align: left;">by {{item.item.user.username}}</h6>
+            <hr>
+            <img class="miniature-pic" src="{{ item.item.data.url }}">
+
+        </div>
+    </div>
+    <div class="col-md-9">
+        <div class="card card-body">
+                <table class="table table-sm">
+                    <colgroup>
+                        <colgroup>
+                            <col span="1" style="width: 15%;">
+                            <col span="1" style="width: 70%;">
+                            <col span="1" style="width: 15%;">
+                         </colgroup>
+                    </colgroup>
+                    <tbody>
+                            <tr>
+                                <td>Rated at</td>
+                                <td> {{ rating }} of 5 Stars </td>
+                                <td>( {{reviews|length}} reviews)</td>
+                            </tr>
+                            <tr>
+                                <td>Price: </td>
+                                <td>{{ item.price }}</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>Description: </td>
+                                <td>{{ item.description }}</td>
+                                <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+                {% if user.is_authenticated %}
+                <a class="btn btn-success" href ="../purchase/{{item.pk}}"> BUY for {{item.price}}</a>
+                {% else %}
+                <a class="btn btn-primary" href="{% url 'login' %}">Login</a> or  <a class="btn btn-info"  href="{% url 'create_account' %}">Register</a>
+                {% endif %}
+                <br><h5 style="text-align: center;">Review of customers</h5>
+                {% for r in reviews %}
+                    <h5>Review by {{ r.user.username }}</ht>
+                    <table class="table table-sm">
+                        <tbody>
+                            
+                                <tr>
+                                    <td>
+                                    <b>Rated with {{r.stars}} / 5 stars ({{ r.date }})</b>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                    {{ r.content }}
+                                    </td>
+                                </tr>
+                                
+                        </tbody>
+                    </table>
+                    <br>
+                {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% endblock content%}
