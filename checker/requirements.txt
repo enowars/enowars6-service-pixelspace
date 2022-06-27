@@ -3,3 +3,4 @@ pymongo
 requests
 django-random-user-hash==0.0.4
 python-string-utils
+essential-generators

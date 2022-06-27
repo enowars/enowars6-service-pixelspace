@@ -1,31 +1,22 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1>Shoppage</h1>
-{% if messages %}
+{% load django_bootstrap5 %}
 
-    {% for message in messages %}
-    <p style="color:red">{{ message }}</p>
-    {% endfor %}
+{# Load CSS and JavaScript #}
+{% bootstrap_css %}
+{% bootstrap_javascript %}
 
-{% endif %}
+{% bootstrap_messages %}
 {% if shop_items %}
 There are {{shop_items|length}} objects in the shop:
 <br>
-<p id="demo"></p>
-<script>
-    var w = window.innerWidth;
-    var h = window.innerHeight;
-    
-    var x = document.getElementById("demo");
-    x.innerHTML = "Browser width: " + w + ", height: " + h + ".";
-</script>
 {% for k,s in shop_items.items %}
     <td><h4>{{ s.item.item.name }} by {{s.item.item.user.username}}</h4></td><br>
     <td><img src="{{ s.item.item.data.url }}"/></td><br>
     <td>Price: {{ s.item.price }}</td><br>
     <td>Description: {{ s.item.description }}</td><br>
     <ts>Rating: {{ s.rating }} (avg. from {{ s.num_reviews }})</ts>
-    <td><a href="{{s.item.pk}}">View item</a></td><br>
+    <td><a id="viewable-{{s.item.item.name}}" href="{{s.item.pk}}">View item</a></td><br>
     <td>{{ s.item.sold }} sold</td><br>
     <br>
 {% endfor %}

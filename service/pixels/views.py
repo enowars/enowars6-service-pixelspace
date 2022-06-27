@@ -117,7 +117,8 @@ def shop(request):
         revs = Comment.objects.raw(f"SELECT * FROM pixels_comment WHERE item_id = {item.pk}")
         for r in revs:
             avg_rating += r.stars
-        avg_rating /= len(revs)
+        if len(revs) != 0:
+            avg_rating /= len(revs)
         shop_items[i] = {
             'id': i,
             'rating': avg_rating,
@@ -133,7 +134,8 @@ def item(request,item_id):
     content_dict['reviews'] = Comment.objects.raw(f"SELECT * FROM pixels_comment WHERE item_id = {item_id}")
     for r in content_dict['reviews']:
         avg_rating += r.stars
-    avg_rating /= len(content_dict['reviews'])
+    if len(content_dict['reviews']) != 0:
+        avg_rating /= len(content_dict['reviews'])
     content_dict['rating'] = avg_rating
     return render(request, 'shop_item.html', content_dict)
 
@@ -165,6 +167,7 @@ def user_items(request):
 def create_listing(request,item_id):
     if request.method == 'POST':
         form = ShopListingForm(request.POST,request.FILES,request.user)
+        print(form.errors)
         if form.is_valid():
             obj = form.save(commit=False)
             obj.item = ShopItem.objects.get(pk=item_id)

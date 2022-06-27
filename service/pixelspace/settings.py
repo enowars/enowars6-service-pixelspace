@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'debug_permissions',
     'django_bootstrap5',
     'django_random_user_hash',
+    #'responsive',
 ]
 
 MIDDLEWARE = [
@@ -52,6 +53,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    #'responsive.middleware.DeviceInfoMiddleware',
 ]
 
 FILE_UPLOAD_HANDLERS = [
@@ -72,6 +74,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                #'django.core.context_processors.request',
+                #'responsive.context_processors.device_info',
             ],
         },
     },

@@ -5,7 +5,7 @@ from urllib.request import CacheFTPHandler
 from xmlrpc.client import ResponseError
 from httpx import AsyncClient
 from util import *
-
+from essential_generators import DocumentGenerator
 
 from enochecker3 import(
     ChainDB,
@@ -27,12 +27,11 @@ from enochecker3 import(
 
     #EXPLOIT-Message-Tasks
     ExploitCheckerTaskMessage,
-
-
-    
 )
 
 from enochecker3.utils import FlagSearcher, assert_equals, assert_in
+
+gen = DocumentGenerator()
 
 checker = Enochecker("Pixelspace",8010)
 def app(): return checker.app
@@ -51,31 +50,35 @@ async def putflag_license(task: PutflagCheckerTaskMessage, client: AsyncClient, 
     await create_ShopItem(client=client,logger=None,db=db,kwargs=shop_item_kwargs)
     shop_listing_kwargs = {
         'item_name': item_name,
-        'item_price': 100000000000.0,
-        'description': 'THIS IS SUPER EXPENSIVE GG CHECKER',
+        'item_price': 2147483646,
+        'description': gen.sentence(),
     }
     await create_ShopListing(client=client,logger=None,db=db,kwargs=shop_listing_kwargs)
     await logout_user(client=client,logger=None,db=db,kwargs={'logged_in':True})
     await db.set(task.task_chain_id + "_flag", task.flag)
+    await db.set(task.task_chain_id + "_item", item_name)
     await db.set(task.task_chain_id + "_user", {'user':user['username'],'password':user['password1']})
 
 
 @checker.getflag(0)
 async def getflag_license(task: GetflagCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
     item_id = -1
-    regex_item = '<a href="(.+?)">View Item</a>'
-    regex_license = '<a href="/(.+?)">View License</a>'
     try: 
         user = await db.get(task.task_chain_id+"_user")
     except KeyError:
-        raise MumbleException("Could not retrieve data from ChainDB!")
+        raise MumbleException("Could not retrieve USER from ChainDB!")
 
     try:
         flag = await db.get(task.task_chain_id+"_flag")
     except KeyError:
-        raise MumbleException("Could not retrieve data from ChainDB!")
+        raise MumbleException("Could not retrieve FLAG from ChainDB!")
     if flag != task.flag:
         raise MumbleException(f"Flags with task_chain_id={task.task_chain_id} are different (DB and task)!")
+
+    try:
+        item_name = await db.get(task.task_chain_id+"_item")
+    except KeyError:
+        raise MumbleException("Could not retrieve ITEM_NAME from ChainDB!")    
 
     login_kwargs={
         'username': user['user'],
@@ -87,22 +90,16 @@ async def getflag_license(task: GetflagCheckerTaskMessage, client: AsyncClient, 
     except RequestError:
         raise MumbleException("Error while retrieving user items!")
     
-    
+    regex_item = f'<a id="self-view-'+item_name+'" href="(.+?)">View Item</a>'
     item_id = re.findall(regex_item,response.text)[0]
     if item_id == -1:
-        raise MumbleException("Errow while searching for flag item (license)!")
+        raise MumbleException("Errow while searching for FLAG_ITEM (license)!")
 
-    try:  
-        response = await client.get(f'user_items/{item_id}',follow_redirects=True)
-    except RequestError:
-        raise MumbleException(f"Error while viewing user item with id: {item_id}")
-    
-    license_url = re.findall(regex_license,response.text)[0]
 
     try:
-        response = await client.get(f"{license_url}",follow_redirects=True)
+        response = await client.get(f"user_items/license/{item_id}",follow_redirects=True)
     except RequestError:
-        raise MumbleException(f"Error while viewing license of user item with id: {item_id}")
+        raise MumbleException(f"Error while viewing LICENSE from ITEM_ID: {item_id}")
         
     if task.flag not in response.text:
         raise MumbleException(f"Error - Flag not in response text!")

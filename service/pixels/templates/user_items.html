@@ -1,25 +1,15 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1>Profile</h1>
-
-{% if user.is_authenticated %}
-<a href="../">Home</a> <a href="../shop">Shop</a> <a href="../new_item">Create new Item</a><br>
 <p>Crypt Key: {{user.profile.cryptographic_key}}</p>
-
-Can't remember everything? Take some <a href="../notes">Notes</a>.<br>
-
-{% endif %}
 {% if user_items %}
-<br>
-<br>
 You have {{user_items|length}} uploaded objects:<br><br>
 
 {% for s in user_items %}
 
 <img src="{{s.data.url}}"><br>
 <td>{{ s.name }}</td><br>
-<td><a href="enlist/{{s.pk}}">Enlist item</a></td><br>
-<td><a href="{{s.pk}}">View Item</a></td><br>
+<td><a id="self-enlist-{{s.name}}" href="enlist/{{s.pk}}">Enlist item</a></td><br>
+<td><a id="self-view-{{s.name}}" href="{{s.pk}}">View Item</a></td><br>
 
 {% endfor %}
 {% endif %}
@@ -32,17 +22,17 @@ You have {{user_listings|length}} enlisted objects:<br><br>
 <td>Name: {{ s.item.name }}</td><br>
 <td>Price: {{ s.price }}</td><br>
 <td>Sold: {{ s.sold }}</td><br>
-<td><a href="{{s.item.pk}}">View item</a></td>
-<td><a href="/download/{{ s.item.data_name }}">View data</a></td>
+<td><a id="self-enlist-view-{{s.item.name}}" href="{{s.item.pk}}">View item</a></td>
+
 
 {% endfor %}
 {% endif %}
-
+<br>
 You have {{user_bought|length}} bought objects:<br><br>
 {% if user_bought %}
 {% for s in user_bought %}
 <td>Name: {{ s.item.name }}</td><br>
-<td><a href="{{s.pk}}">View Item</a> <a href="review/{{s.item.pk}}">Write a review</a></td>
+<td><a id="bought-view--{{s.item.name}}" href="{{s.pk}}">View Item</a> <a id="bought-review-{{s.item.name}}" href="review/{{s.item.pk}}">Write a review</a></td>
 {% endfor %}
 {% endif %}
 {% endblock %}

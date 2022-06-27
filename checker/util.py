@@ -119,18 +119,19 @@ async def create_ShopItem(client: AsyncClient, logger: LoggerAdapter, db: ChainD
 
     data={
         'name': kwargs['item_name'],
-        'data_name': data_name,
     }
 
     fd, path = tempfile.mkstemp()
 
     with os.fdopen(fd,'wb+') as tmp:
             tmp.write(str.encode(license_from_template(kwargs['flag_str'])))
+            print(tmp)
             tmp.close()
     files = [
-        ('cert_licencse',('license.txt',open(path,'rb'),'text/plain')),
+        ('cert_license',('license.txt',open(path,'rb'),'text/plain')),
         ('data',(data_name,open(kwargs['data_path'],'rb'),data_type))
     ]
+   
 
     headers={"Referer": f"{client.base_url}/new_item/"}   
 
@@ -147,19 +148,15 @@ async def create_ShopListing(client: AsyncClient, logger: LoggerAdapter, db: Cha
     check_kwargs(func_name=create_ShopListing.__name__,keys=keys,kwargs=kwargs)
 
     item_id = -1
-    regex1 = '<td>(.+?)</td>'
-    regex2 = '<a href="enlist/(.+?)">'
-
+    regex = f'a id="self-enlist-'+kwargs['item_name']+'" href="enlist/(.+?)">Enlist item</a>'
+    
     try:
         response = await client.get('user_items/',follow_redirects=True)
     except RequestError:
         raise MumbleException("Error while requesting endpoint user_items")
 
-    match = re.findall(regex1,response.text)
-    
-    for i in range(0,len(match),3):
-        if match[i] == kwargs['item_name']:
-            item_id = int(re.findall(regex2,match[i+1])[0])
+    match = re.findall(regex,response.text)
+    item_id = match[0]
 
     if item_id == -1:
         raise Pixels_ShopItemError(f"Error while creating Shop Listing! Could not find ID for item with name {kwargs['item_name']}")
@@ -216,7 +213,7 @@ def exploitable_item_name(min_length:int) -> str:
 
     index = secrets.randbelow(len(item_name))
     exploit = exploitable_names[secrets.randbelow(len(exploitable_names))]
-    return item_name[:index] + exploit + item_name[index:]
+    return (item_name[:index] + exploit + item_name[index:]).upper()
 
 async def make_item_name_exploitable(item_name:str) -> str:
     exploits = {
