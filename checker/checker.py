@@ -203,7 +203,7 @@ async def put_noise_notes(task: PutnoiseCheckerTaskMessage, client: AsyncClient,
     await db.set(task.task_chain_id + "_user", {'user':user['username'],'password':user['password1']})
 
 @checker.getnoise(1)
-async def get_noise_notes(task: PutnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
+async def get_noise_notes(task: GetnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
     regex_notes = '<input type="text" name="notes" value="(.+?)" maxlength="50000" required id="id_notes">'
     try: 
         user = await db.get(task.task_chain_id+"_user")
@@ -221,6 +221,7 @@ async def get_noise_notes(task: PutnoiseCheckerTaskMessage, client: AsyncClient,
     except RequestError:
         raise MumbleException("Error while retrieving user items!")
 
+    print(response.text)
     match = re.findall(regex_notes,response.text)[0]
     assert_in(note,match)
 ############################## EXPLOITS ################################
