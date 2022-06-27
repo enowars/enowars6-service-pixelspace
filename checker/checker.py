@@ -159,7 +159,7 @@ async def put_noise_base_functions(task: PutnoiseCheckerTaskMessage, client: Asy
     await create_ShopItem(client=client,logger=None,db=db,kwargs=shop_item_kwargs)
     shop_listing_kwargs = {
         'item_name': item_name,
-        'item_price': random.randint(1,1000)/100,
+        'item_price': random.randint(1,1000),
         'description': ''.join(secrets.choice(string.ascii_letters) for i in range(random.randint(5,25))),
     }
     await create_ShopListing(client=client,logger=None,db=db,kwargs=shop_listing_kwargs)
@@ -189,7 +189,40 @@ async def get_noise_base_functions(task: GetnoiseCheckerTaskMessage, client: Asy
     if not item in response.text:
         raise MumbleException("GET_NOISE_BASE_FUNCTIONS - Error while searching for previously enlisted item!")
 
+@checker.putnoise(1)
+async def put_noise_notes(task: PutnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
+    user = await register_user(client=client,logger=None,db=db,chain_id=None)
+    note = gen.sentence()
+    note_kwargs = {
+        'note': note,
+        'logged_in': True,
+    }
+    await create_note(client=client,logger=None,db=db,kwargs=note_kwargs)
+    await logout_user(client=client,logger=None,db=db,kwargs={'logged_in':True})
+    await db.set(task.task_chain_id + "_noise", note)
+    await db.set(task.task_chain_id + "_user", {'user':user['username'],'password':user['password1']})
 
+@checker.getnoise(1)
+async def get_noise_notes(task: PutnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
+    regex_notes = '<input type="text" name="notes" value="(.+?)" maxlength="50000" required id="id_notes">'
+    try: 
+        user = await db.get(task.task_chain_id+"_user")
+        note = await db.get(task.task_chain_id+"_noise")
+    except KeyError:
+        raise MumbleException("Could not retrieve data from ChainDB!")
+
+    login_kwargs={
+        'username': user['user'],
+        'password': user['password'],
+    }
+    await login(client=client,logger=None,db=db,kwargs=login_kwargs)
+    try:
+        response = await client.get('notes/',follow_redirects=True)
+    except RequestError:
+        raise MumbleException("Error while retrieving user items!")
+
+    match = re.findall(regex_notes,response.text)[0]
+    assert_in(note,match)
 ############################## EXPLOITS ################################
 
 
