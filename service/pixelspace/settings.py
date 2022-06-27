@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     'debug_permissions',
     'django_bootstrap5',
     'django_random_user_hash',
-    #'responsive',
+    'django_crontab',
 ]
 
 MIDDLEWARE = [
@@ -53,7 +53,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    #'responsive.middleware.DeviceInfoMiddleware',
 ]
 
 FILE_UPLOAD_HANDLERS = [
@@ -125,6 +124,9 @@ PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
 ]
 
+CRONJOBS = [
+    ('*/1 * * * *','pixels.cron.clean_up','>> /var/log/clean_up.log')
+]
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/

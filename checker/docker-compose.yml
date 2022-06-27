@@ -2,6 +2,7 @@ version: "3.3"
 
 services:
   pixelspace-checker:
+    restart: unless-stopped
     container_name: Pixelspace-checker
     build:
       context: .
@@ -23,6 +24,7 @@ services:
  #     - vuln
 
   pixelspace-checker-db:
+    restart: unless-stopped
     container_name: Pixelspace-checker_db
     image: mongo
     volumes:

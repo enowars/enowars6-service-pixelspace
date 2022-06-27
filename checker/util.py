@@ -36,8 +36,8 @@ def check_kwargs(func_name: str ,keys: list, kwargs):
      
 async def register_user(client: AsyncClient, logger: LoggerAdapter,db: ChainDB,chain_id:int) -> Tuple[str,str]:
 
-    username = secrets.token_hex(8)
-    password = secrets.token_hex(8)
+    username = secrets.token_hex(12)
+    password = secrets.token_hex(12)
     first_name = secrets.token_hex(5)
     last_name = secrets.token_hex(5)
     email = secrets.token_hex(8) + "@" + secrets.token_hex(4) +"." +secrets.token_hex(3)
@@ -206,7 +206,7 @@ async def logout_user(client: AsyncClient,logger: LoggerAdapter, db:ChainDB, kwa
 def exploitable_item_name(min_length:int) -> str: 
 
     exploitable_names = ['ss','s','i','SS','S','I']
-    item_name = ''.join(secrets.choice(string.ascii_letters) for i in range(random.randint(min_length,18)))
+    item_name = ''.join(secrets.choice(string.ascii_letters) for i in range(random.randint(min_length,100)))
 
     if any(sub in item_name for sub in exploitable_names):
        return item_name

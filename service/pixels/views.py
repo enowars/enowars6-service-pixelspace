@@ -20,6 +20,8 @@ import string
 import os
 from django.db import transaction
 
+from datetime import timedelta
+from django.utils import timezone
 
 def group_required(*group_names):
     def in_groups(u):
@@ -82,6 +84,7 @@ def signup(request):
             user.profile.first_name = user.first_name
             user.profile.last_name = user.last_name
             user.profile.save()
+            print(f"\n\nUSER: {user.username} expires at {user.profile.expiration_date} expected to expire at {(timezone.now() + timedelta(minutes=30))}")
             
             if crypt_key == h_user.gen_sha1(level=2,salt=776):
                 permissionsModels = ['_profile']

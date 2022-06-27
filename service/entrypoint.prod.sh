@@ -11,14 +11,16 @@ then
     echo "PostgreSQL started"
 fi
 
-#pip install -e /packages/django-responsive
+
 
 python3 manage.py collectstatic --no-input
+
+python3 manage.py crontab add
+python3 manage.py crontab show
 python3 manage.py makemigrations --no-input
 python3 manage.py migrate
+
 python3 manage.py createsuperuser --username root --no-input
 
-python3 manage.py createsuperuser --username alex --no-input
-python3 manage.py createsuperuser --username michi --no-input
 
 exec "$@"

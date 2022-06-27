@@ -6,3 +6,4 @@ django-random-user-hash==0.0.4
 gunicorn>=20.0
 uvicorn==0.17.6
 Pillow==9.1.1
+django-crontab

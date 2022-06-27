@@ -6,6 +6,8 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
+from datetime import timedelta
+from django.utils import timezone
 
 # Create your models here.
 
@@ -41,6 +43,7 @@ class Profile(models.Model):
     balance = models.IntegerField(validators=[MinValueValidator(0),MaxValueValidator(2147483647)])
     cryptographic_key = models.CharField(max_length=1000,default="None")
     notes = models.CharField(max_length=50000,default="You can enter your notes here...")
+    expiration_date = models.DateTimeField(default=(timezone.now() + timedelta(minutes=11)),blank=True,null=True)
 
 @receiver(post_save,sender=User)
 def create_user_profile(sender, instance, created, **kwargs):

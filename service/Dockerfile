@@ -9,6 +9,6 @@ RUN pip install -r requirements.txt
 COPY . /code/
 
 
-
+RUN cron
 #ENTRYPOINT [ "gunicorn", "-c", "gunicorn.conf.py", "pixelspace.asgi" ]
 #ENTRYPOINT [ "python3", "entrypoint.py" ]
