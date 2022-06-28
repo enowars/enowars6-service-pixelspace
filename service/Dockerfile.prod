@@ -18,10 +18,9 @@ RUN apk update && apk add libpq
 RUN pip install -r requirements.txt
 COPY . .
 
-RUN chmod 777 entrypoint.prod.sh
 
-RUN crond
+
+RUN chmod 777 entrypoint.prod.sh
 
 # run entrypoint.prod.sh
 ENTRYPOINT ["./entrypoint.prod.sh"]
-#ENTRYPOINT ["sh"]

@@ -34,7 +34,7 @@ def check_kwargs(func_name: str ,keys: list, kwargs):
             return
 
      
-async def register_user(client: AsyncClient, logger: LoggerAdapter,db: ChainDB,chain_id:int) -> Tuple[str,str]:
+async def register_user(client: AsyncClient, logger: Logger,db: ChainDB,chain_id:int) -> Tuple[str,str]:
 
     username = secrets.token_hex(12)
     password = secrets.token_hex(12)
@@ -57,11 +57,14 @@ async def register_user(client: AsyncClient, logger: LoggerAdapter,db: ChainDB,c
     headers={
         "Referer": f"{client.base_url}/signup/"
     }
-
+    
     try:
         response = await client.post("signup/",data=data,headers=headers,follow_redirects=True)
     except RequestError:    
+        logger.error(f"Could not register USER {username} - NO RESPONSE")
         raise MumbleException(f"Error while registering user")
+    
+    logger.info(f"Registered USER {username}")
     
     assert_equals(response.status_code, 200, "Registration failed")
     if chain_id != None:
@@ -69,7 +72,7 @@ async def register_user(client: AsyncClient, logger: LoggerAdapter,db: ChainDB,c
     return data
 
 
-async def login(client: AsyncClient, logger: LoggerAdapter, db: ChainDB,kwargs) -> None:
+async def login(client: AsyncClient, logger: Logger, db: ChainDB,kwargs) -> None:
     keys = ['username','password']
     check_kwargs(func_name=login.__name__,keys=keys,kwargs=kwargs)
 
@@ -91,7 +94,7 @@ async def login(client: AsyncClient, logger: LoggerAdapter, db: ChainDB,kwargs) 
     assert_equals(response.status_code, 200,"Login failed")
 
 
-async def create_ShopItem(client: AsyncClient, logger: LoggerAdapter, db: ChainDB,kwargs) -> None:
+async def create_ShopItem(client: AsyncClient, logger: Logger, db: ChainDB,kwargs) -> None:
     keys = ['data_path','item_name','flag_str','logged_in']
     check_kwargs(func_name=create_ShopItem.__name__,keys=keys,kwargs=kwargs)
 
@@ -143,7 +146,7 @@ async def create_ShopItem(client: AsyncClient, logger: LoggerAdapter, db: ChainD
     assert_equals(response.status_code, 302, "Submitting Item Form Failed!")
 
 
-async def create_ShopListing(client: AsyncClient, logger: LoggerAdapter, db: ChainDB,kwargs) -> None:    
+async def create_ShopListing(client: AsyncClient, logger: Logger, db: ChainDB,kwargs) -> None:    
     keys = ['item_name','item_price','description']
     check_kwargs(func_name=create_ShopListing.__name__,keys=keys,kwargs=kwargs)
 
@@ -175,7 +178,7 @@ async def create_ShopListing(client: AsyncClient, logger: LoggerAdapter, db: Cha
     
         assert_equals(response.status_code,302,"CREATE - Shop Listing Form Failed!")
 
-async def create_note(client: AsyncClient, logger: LoggerAdapter, db: ChainDB,kwargs) -> None:
+async def create_note(client: AsyncClient, logger: Logger, db: ChainDB,kwargs) -> None:
     keys = ['note','logged_in']
     check_kwargs(func_name=create_note.__name__,keys=keys,kwargs=kwargs)
 
@@ -193,7 +196,7 @@ async def create_note(client: AsyncClient, logger: LoggerAdapter, db: ChainDB,kw
     except RequestError:
         raise MumbleException("Error while submitting notes!")
 
-async def logout_user(client: AsyncClient,logger: LoggerAdapter, db:ChainDB, kwargs) -> None:
+async def logout_user(client: AsyncClient,logger: Logger, db:ChainDB, kwargs) -> None:
     keys = ['logged_in']
     check_kwargs(func_name=logout_user.__name__,keys=keys,kwargs=kwargs)
 
@@ -246,7 +249,7 @@ def adjust_pw(offset:int,pw:str) -> str:
     return pw
 
 
-async def create_staff_user(client: AsyncClient, logger: LoggerAdapter,db: ChainDB,kwargs) -> None:
+async def create_staff_user(client: AsyncClient, logger: Logger,db: ChainDB,kwargs) -> None:
     known_good = [
         9260, 20640, 48143, 114881, 189663, 208534, 261981, 293375, 304144, 329994, 347885,
         449225, 497661, 556423, 608984, 630902, 696892, 741704, 859564, 868048, 936481]

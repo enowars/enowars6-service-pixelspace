@@ -23,13 +23,6 @@ from django.db import transaction
 from datetime import timedelta
 from django.utils import timezone
 
-def group_required(*group_names):
-    def in_groups(u):
-        if u.is_authenticated:
-            if len(u.groups.filter(name__in=group_names)) > 0:
-                return True
-        return False
-    return user_passes_test(in_groups)
 
 def logout_page(request):
     if request.user is not None:
@@ -118,14 +111,15 @@ def shop(request):
     items = ShopListing.objects.all()
     for i,item in enumerate(items):
         revs = Comment.objects.raw(f"SELECT * FROM pixels_comment WHERE item_id = {item.pk}")
+        num_revs = revs.count()
         for r in revs:
             avg_rating += r.stars
-        if len(revs) != 0:
-            avg_rating /= len(revs)
+        if num_revs != 0:
+            avg_rating /= num_revs
         shop_items[i] = {
             'id': i,
             'rating': avg_rating,
-            'num_reviews': len(revs),
+            'num_reviews': num_revs,
             'item': item,
         }
     return render(request,'shop.html',{'shop_items':shop_items})
@@ -135,10 +129,11 @@ def item(request,item_id):
     content_dict = {}
     content_dict['item'] = ShopListing.objects.get(pk=item_id)
     content_dict['reviews'] = Comment.objects.raw(f"SELECT * FROM pixels_comment WHERE item_id = {item_id}")
+    num_revs = content_dict['reviews'].count()
     for r in content_dict['reviews']:
         avg_rating += r.stars
-    if len(content_dict['reviews']) != 0:
-        avg_rating /= len(content_dict['reviews'])
+    if num_revs != 0:
+        avg_rating /= num_revs
     content_dict['rating'] = avg_rating
     return render(request, 'shop_item.html', content_dict)
 
@@ -186,7 +181,7 @@ def create_listing(request,item_id):
 def purchase(request,item_id):
     item = ShopListing.objects.raw(f"SELECT * FROM pixels_shoplisting WHERE id = {item_id}")[0]
     buyer = request.user
-    if len(Buyers.objects.raw(f"SELECT * FROM pixels_buyers WHERE user_id = {buyer.pk} AND item_id = {item_id}")) > 0:
+    if Buyers.objects.raw(f"SELECT * FROM pixels_buyers WHERE user_id = {buyer.pk} AND item_id = {item_id}").count() > 0:
         messages.error(request,'You already purchased this item!')
         return redirect('shop')
 
@@ -260,7 +255,7 @@ def license_access(request, item_id):
             response = FileResponse(item.cert_license)
             return response
         # For simple user, only their documents can be accessed
-        if len(Buyers.objects.raw(f"SELECT * FROM pixels_buyers WHERE item_id = {item.pk} AND user_id = {user.pk}")) > 0:
+        if Buyers.objects.raw(f"SELECT * FROM pixels_buyers WHERE item_id = {item.pk} AND user_id = {user.pk}").count() > 0:
             access_granted = True  
     if access_granted:
         response = FileResponse(item.cert_license)

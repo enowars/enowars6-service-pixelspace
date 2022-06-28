@@ -12,7 +12,7 @@ from pixels.forms import SignupForm
 
 def check_item_name_exists(name: str) -> bool:
     items = ShopItem.objects.raw(f"SELECT * FROM pixels_shopitem WHERE name = '{name}'")
-    if len(list(items)) == 0:
+    if items.count() == 0:
         return False
     return True
     

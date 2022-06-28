@@ -6,6 +6,9 @@ from xmlrpc.client import ResponseError
 from httpx import AsyncClient
 from util import *
 from essential_generators import DocumentGenerator
+from logger import CustomFormatter
+import logging
+
 
 from enochecker3 import(
     ChainDB,
@@ -31,6 +34,22 @@ from enochecker3 import(
 
 from enochecker3.utils import FlagSearcher, assert_equals, assert_in
 
+logging.basicConfig(filename="/var/log/checker.log")
+logger = logging.getLogger("My_app")
+logger.setLevel(logging.DEBUG)
+
+# create console handler with a higher log level
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+
+ch.setFormatter(CustomFormatter())
+
+logger.addHandler(ch)
+
+
+
+
+
 gen = DocumentGenerator()
 
 checker = Enochecker("Pixelspace",8010)
@@ -39,7 +58,7 @@ def app(): return checker.app
 @checker.putflag(0)
 async def putflag_license(task: PutflagCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:   
     item_name = exploitable_item_name(min_length=5)
-    user = await register_user(client=client,logger=None,db=db,chain_id=task.task_chain_id)
+    user = await register_user(client=client,logger=logger,db=db,chain_id=task.task_chain_id)
     shop_item_kwargs =  {
         'data_path': '/frog.png',
         'item_name': item_name,
@@ -47,14 +66,14 @@ async def putflag_license(task: PutflagCheckerTaskMessage, client: AsyncClient, 
         'flag_str': task.flag,
     }
     
-    await create_ShopItem(client=client,logger=None,db=db,kwargs=shop_item_kwargs)
+    await create_ShopItem(client=client,logger=logger,db=db,kwargs=shop_item_kwargs)
     shop_listing_kwargs = {
         'item_name': item_name,
         'item_price': 2147483646,
         'description': gen.sentence(),
     }
-    await create_ShopListing(client=client,logger=None,db=db,kwargs=shop_listing_kwargs)
-    await logout_user(client=client,logger=None,db=db,kwargs={'logged_in':True})
+    await create_ShopListing(client=client,logger=logger,db=db,kwargs=shop_listing_kwargs)
+    await logout_user(client=client,logger=logger,db=db,kwargs={'logged_in':True})
     await db.set(task.task_chain_id + "_flag", task.flag)
     await db.set(task.task_chain_id + "_item", item_name)
     await db.set(task.task_chain_id + "_user", {'user':user['username'],'password':user['password1']})
@@ -84,7 +103,7 @@ async def getflag_license(task: GetflagCheckerTaskMessage, client: AsyncClient, 
         'username': user['user'],
         'password': user['password'],
     }
-    await login(client=client,logger=None,db=db,kwargs=login_kwargs)
+    await login(client=client,logger=logger,db=db,kwargs=login_kwargs)
     try:
         response = await client.get('user_items/',follow_redirects=True)
     except RequestError:
@@ -108,12 +127,12 @@ async def getflag_license(task: GetflagCheckerTaskMessage, client: AsyncClient, 
 
 @checker.putflag(1)
 async def putflag_notes(task: PutflagCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:    
-    user = await register_user(client=client,logger=None,db=db,chain_id=task.task_chain_id)
+    user = await register_user(client=client,logger=logger,db=db,chain_id=task.task_chain_id)
     note_kwargs = {
         'note':task.flag,
         'logged_in': True,
     }
-    await create_note(client=client,logger=None,db=db,kwargs=note_kwargs)
+    await create_note(client=client,logger=logger,db=db,kwargs=note_kwargs)
     await db.set(task.task_chain_id + "_flag", task.flag)
     await db.set(task.task_chain_id + "_user", {'user':user['username'],'password':user['password1']})
     
@@ -134,7 +153,7 @@ async def getflag_notes(task: GetflagCheckerTaskMessage, client: AsyncClient, db
         'username': user['user'],
         'password': user['password'],
     }
-    await login(client=client,logger=None,db=db,kwargs=login_kwargs)
+    await login(client=client,logger=logger,db=db,kwargs=login_kwargs)
     try:
         response = await client.get('notes/',follow_redirects=True)
     except RequestError:
@@ -147,7 +166,7 @@ async def getflag_notes(task: GetflagCheckerTaskMessage, client: AsyncClient, db
 
 @checker.putnoise(0)
 async def put_noise_base_functions(task: PutnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
-    user = await register_user(client=client,logger=None,db=db,chain_id=None)
+    user = await register_user(client=client,logger=logger,db=db,chain_id=None)
     item_name = ''.join(secrets.choice(string.ascii_letters) for i in range(random.randint(5,15)))
     shop_item_kwargs =  {
         'data_path': '/frog.png',
@@ -156,14 +175,14 @@ async def put_noise_base_functions(task: PutnoiseCheckerTaskMessage, client: Asy
         'flag_str': ''.join(secrets.choice(string.ascii_letters) for i in range(random.randint(5,15))),
     }
     
-    await create_ShopItem(client=client,logger=None,db=db,kwargs=shop_item_kwargs)
+    await create_ShopItem(client=client,logger=logger,db=db,kwargs=shop_item_kwargs)
     shop_listing_kwargs = {
         'item_name': item_name,
         'item_price': random.randint(1,1000),
         'description': ''.join(secrets.choice(string.ascii_letters) for i in range(random.randint(5,25))),
     }
-    await create_ShopListing(client=client,logger=None,db=db,kwargs=shop_listing_kwargs)
-    await logout_user(client=client,logger=None,db=db,kwargs={'logged_in':True})
+    await create_ShopListing(client=client,logger=logger,db=db,kwargs=shop_listing_kwargs)
+    await logout_user(client=client,logger=logger,db=db,kwargs={'logged_in':True})
     await db.set(task.task_chain_id + "_item_name", item_name)
     await db.set(task.task_chain_id + "_user", {'user':user['username'],'password':user['password1']})
 
@@ -180,7 +199,7 @@ async def get_noise_base_functions(task: GetnoiseCheckerTaskMessage, client: Asy
         'password': user['password'],
     }
 
-    await login(client=client,logger=None,db=db,kwargs=login_kwargs)
+    await login(client=client,logger=logger,db=db,kwargs=login_kwargs)
 
     try:
         response = await client.get('shop',follow_redirects=True)
@@ -191,14 +210,14 @@ async def get_noise_base_functions(task: GetnoiseCheckerTaskMessage, client: Asy
 
 @checker.putnoise(1)
 async def put_noise_notes(task: PutnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
-    user = await register_user(client=client,logger=None,db=db,chain_id=None)
+    user = await register_user(client=client,logger=logger,db=db,chain_id=None)
     note = gen.sentence()
     note_kwargs = {
         'note': note,
         'logged_in': True,
     }
-    await create_note(client=client,logger=None,db=db,kwargs=note_kwargs)
-    await logout_user(client=client,logger=None,db=db,kwargs={'logged_in':True})
+    await create_note(client=client,logger=logger,db=db,kwargs=note_kwargs)
+    await logout_user(client=client,logger=logger,db=db,kwargs={'logged_in':True})
     await db.set(task.task_chain_id + "_noise", note)
     await db.set(task.task_chain_id + "_user", {'user':user['username'],'password':user['password1']})
 
@@ -215,7 +234,7 @@ async def get_noise_notes(task: GetnoiseCheckerTaskMessage, client: AsyncClient,
         'username': user['user'],
         'password': user['password'],
     }
-    await login(client=client,logger=None,db=db,kwargs=login_kwargs)
+    await login(client=client,logger=logger,db=db,kwargs=login_kwargs)
     try:
         response = await client.get('notes/',follow_redirects=True)
     except RequestError:
@@ -231,7 +250,7 @@ async def exploit_license(searcher: FlagSearcher, client: AsyncClient, db: Chain
     item_cost = 100000000000.0
     regex_license = '<a href="/(.+?)">View License</a>' 
     regex_item_name = re.compile(f"<td><h4>(.*)</h4>(?:.*)\n(?:.*)\n<td>{item_cost}</td>",re.MULTILINE)
-    user = await register_user(client=client,logger=None,db=db,chain_id=None)
+    user = await register_user(client=client,logger=logger,db=db,chain_id=None)
 
     try:
         response = await client.get('shop/',follow_redirects=True)
@@ -250,15 +269,15 @@ async def exploit_license(searcher: FlagSearcher, client: AsyncClient, db: Chain
             'flag_str': 'This is just an exploit',
         }
         
-        await create_ShopItem(client=client,logger=None,db=db,kwargs=shop_item_kwargs)
+        await create_ShopItem(client=client,logger=logger,db=db,kwargs=shop_item_kwargs)
         shop_listing_kwargs = {
             'item_name': item_name,
             'item_price': 0.01,
             'description': 'This is exploitable',
         }
-        await create_ShopListing(client=client,logger=None,db=db,kwargs=shop_listing_kwargs)
-    await logout_user(client=client,logger=None,db=db,kwargs={'logged_in':True})
-    user = await register_user(client=client,logger=None,db=db,chain_id=None)
+        await create_ShopListing(client=client,logger=logger,db=db,kwargs=shop_listing_kwargs)
+    await logout_user(client=client,logger=logger,db=db,kwargs={'logged_in':True})
+    user = await register_user(client=client,logger=logger,db=db,chain_id=None)
     for f in fake_names:
         try:
             response = await client.get('shop/',follow_redirects=True)
@@ -314,7 +333,7 @@ async def exploit_staff(searcher: FlagSearcher, client: AsyncClient, db: ChainDB
         raise MumbleException("Could not retrieve data from ChainDB!")
     """
 
-    user = await register_user(client=client,logger=None,db=db,chain_id=None)
+    user = await register_user(client=client,logger=logger,db=db,chain_id=None)
     
     try:
         response = await client.get(f'user_items/',follow_redirects=True)
@@ -334,13 +353,13 @@ async def exploit_staff(searcher: FlagSearcher, client: AsyncClient, db: ChainDB
     except ResponseError:
         raise MumbleException(f"EXPLOIT_NOTE - Error while logging out!")
     
-    staff_user = await create_staff_user(client=client,logger=None,db=db,kwargs=staff_kwargs)
+    staff_user = await create_staff_user(client=client,logger=logger,db=db,kwargs=staff_kwargs)
 
     login_data = {
         'username':staff_user['username'],
         'password':staff_user['password1'],
     }
-    await login(client=client,logger=None,db=db,kwargs=login_data)
+    await login(client=client,logger=logger,db=db,kwargs=login_data)
     
     try:
         response = await client.get(f'admin/pixels/profile/',follow_redirects=True)
