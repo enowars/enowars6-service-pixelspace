@@ -139,17 +139,17 @@ async def create_ShopItem(client: AsyncClient, logger: Logger, db: ChainDB,kwarg
     headers={"Referer": f"{client.base_url}/new_item/"}   
 
     try:
-        response = await client.post('new_item/',data=data,files=files,headers=headers)
+        response = await client.post('new_item/',data=data,files=files,headers=headers,follow_redirects=True)
     except RequestError:
         raise MumbleException("Error while submitting Shop Item")
-    
-    assert_equals(response.status_code, 302, "Submitting Item Form Failed!")
+    print(response.status_code)
+    assert_equals(response.status_code, 200, "Submitting Item Form Failed!")
 
 
 async def create_ShopListing(client: AsyncClient, logger: Logger, db: ChainDB,kwargs) -> None:    
     keys = ['item_name','item_price','description']
     check_kwargs(func_name=create_ShopListing.__name__,keys=keys,kwargs=kwargs)
-
+    print(f"CREATE_SHOPLISTING_ITEMNAME: {kwargs['item_name']}")
     item_id = -1
     regex = f'a id="self-enlist-'+kwargs['item_name']+'" href="enlist/(.+?)">Enlist item</a>'
     
@@ -157,7 +157,6 @@ async def create_ShopListing(client: AsyncClient, logger: Logger, db: ChainDB,kw
         response = await client.get('user_items/',follow_redirects=True)
     except RequestError:
         raise MumbleException("Error while requesting endpoint user_items")
-
     match = re.findall(regex,response.text)
     item_id = match[0]
 

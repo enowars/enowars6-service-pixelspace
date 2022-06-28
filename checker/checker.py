@@ -57,7 +57,7 @@ def app(): return checker.app
 ####################### GETFLAG AND PUTFLAG #########################
 @checker.putflag(0)
 async def putflag_license(task: PutflagCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:   
-    item_name = exploitable_item_name(min_length=5)
+    item_name = exploitable_item_name(min_length=5).upper()
     user = await register_user(client=client,logger=logger,db=db,chain_id=task.task_chain_id)
     shop_item_kwargs =  {
         'data_path': '/frog.png',
