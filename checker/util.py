@@ -27,14 +27,15 @@ service_port = 8010
 
 
 
-def check_kwargs(func_name: str ,keys: list, kwargs): 
+def check_kwargs(func_name: str ,keys: list, kwargs,fileLogger: Logger): 
     for key in keys:
         if not kwargs[key]:
+            fileLogger.critical(f" {func_name} - Missing KEY {key}! ")
             raise MisconfigurationError(f"FUNC: {func_name} - Kwargs has no key <{key}> !")
             return
 
      
-async def register_user(client: AsyncClient, logger: Logger,db: ChainDB,chain_id:int) -> Tuple[str,str]:
+async def register_user(client: AsyncClient, logger: LoggerAdapter,db: ChainDB,chain_id:int,fileLogger: Logger) -> dict:
 
     username = secrets.token_hex(12)
     password = secrets.token_hex(12)
@@ -61,10 +62,10 @@ async def register_user(client: AsyncClient, logger: Logger,db: ChainDB,chain_id
     try:
         response = await client.post("signup/",data=data,headers=headers,follow_redirects=True)
     except RequestError:    
-        logger.error(f"Could not register USER {username} - NO RESPONSE")
+        fileLogger.error(f"Could not register USER {username} - NO RESPONSE")
         raise MumbleException(f"Error while registering user")
     
-    logger.info(f"Registered USER {username}")
+    fileLogger.info(f"Registered USER {username}")
     
     assert_equals(response.status_code, 200, "Registration failed")
     if chain_id != None:
@@ -72,9 +73,9 @@ async def register_user(client: AsyncClient, logger: Logger,db: ChainDB,chain_id
     return data
 
 
-async def login(client: AsyncClient, logger: Logger, db: ChainDB,kwargs) -> None:
+async def login(client: AsyncClient, logger: LoggerAdapter, db: ChainDB,kwargs, fileLogger: Logger) -> None:
     keys = ['username','password']
-    check_kwargs(func_name=login.__name__,keys=keys,kwargs=kwargs)
+    check_kwargs(func_name=login.__name__,keys=keys,kwargs=kwargs,fileLogger=fileLogger)
 
     data={
         "username": kwargs['username'],
@@ -89,24 +90,24 @@ async def login(client: AsyncClient, logger: Logger, db: ChainDB,kwargs) -> None
     try:
         response = await client.post('login/',data=data,headers=headers,follow_redirects=True)
     except RequestError:
+        fileLogger.error(f" Login - Cannot login as user: {kwargs['username']} pw: {kwargs['password']}")
         raise MumbleException(f"Error while loggin in with credentials\nusername: {kwargs['username']}\n{kwargs['password']}")
     
     assert_equals(response.status_code, 200,"Login failed")
 
 
-async def create_ShopItem(client: AsyncClient, logger: Logger, db: ChainDB,kwargs) -> None:
-    keys = ['data_path','item_name','flag_str','logged_in']
-    check_kwargs(func_name=create_ShopItem.__name__,keys=keys,kwargs=kwargs)
+async def create_ShopItem(client: AsyncClient, logger: LoggerAdapter, db: ChainDB,kwargs,fileLogger: Logger) -> None:
+    keys = ['data_path','item_name','flag_str','logged_in','username','password']
+    check_kwargs(func_name=create_ShopItem.__name__,keys=keys,kwargs=kwargs,fileLogger=fileLogger)
+    await login(client=client,logger=logger,db=db,kwargs=kwargs,fileLogger=fileLogger)
 
-    if kwargs['logged_in'] == False:
-        await login(client=client,logger=logger,db=db)
-
-        try:
-            response = await client.get('user_item/',follow_redirects=True)
-        except RequestError:
-            raise MumbleException(f"Error while retrieving user items")
-        
-        assert_equals(response.status_code, 200,"Getting User Items Failed!")
+    try:
+        response = await client.get('user_items/',follow_redirects=True)
+    except RequestError:
+        #fileLogger.error(f" {__func__} - Cannot access endpoint USER_ITEMS/ as user: {kwargs['username']} (pw: {kwargs['password']}) ")
+        raise MumbleException(f"Error while retrieving user items")
+    
+    assert_equals(response.status_code, 200,"Getting User Items Failed!")
 
 
     try:
@@ -143,18 +144,22 @@ async def create_ShopItem(client: AsyncClient, logger: Logger, db: ChainDB,kwarg
         raise MumbleException("Error while submitting Shop Item")
     
     assert_equals(response.status_code, 200, "Submitting Item Form Failed!")
+    await logout_user(client=client, logger=None,db=db,kwargs=kwargs,fileLogger=fileLogger)
+    
 
-
-async def create_ShopListing(client: AsyncClient, logger: Logger, db: ChainDB,kwargs) -> None:    
+async def create_ShopListing(client: AsyncClient, logger: LoggerAdapter, db: ChainDB,kwargs,fileLogger: Logger) -> None:    
     keys = ['item_name','item_price','description']
-    check_kwargs(func_name=create_ShopListing.__name__,keys=keys,kwargs=kwargs)
+    check_kwargs(func_name=create_ShopListing.__name__,keys=keys,kwargs=kwargs,fileLogger=fileLogger)
     item_id = -1
+    print(f"\n\n{kwargs['item_name']}\n\n")
+    await login(client=client,logger=logger,db=db,kwargs=kwargs,fileLogger=fileLogger)
     regex = f'a id="self-enlist-'+kwargs['item_name']+'" href="enlist/(.+?)">Enlist item</a>'
     
     try:
         response = await client.get('user_items/',follow_redirects=True)
     except RequestError:
         raise MumbleException("Error while requesting endpoint user_items")
+    print(response.text)
     match = re.findall(regex,response.text)
     item_id = match[0]
 
@@ -175,9 +180,9 @@ async def create_ShopListing(client: AsyncClient, logger: Logger, db: ChainDB,kw
     
         assert_equals(response.status_code,302,"CREATE - Shop Listing Form Failed!")
 
-async def create_note(client: AsyncClient, logger: Logger, db: ChainDB,kwargs) -> None:
+async def create_note(client: AsyncClient, logger: Logger, db: ChainDB,kwargs,fileLogger: Logger) -> None:
     keys = ['note','logged_in']
-    check_kwargs(func_name=create_note.__name__,keys=keys,kwargs=kwargs)
+    check_kwargs(func_name=create_note.__name__,keys=keys,kwargs=kwargs,fileLogger=fileLogger)
 
     try:
         response = await client.get('notes/',follow_redirects=True)
@@ -193,9 +198,9 @@ async def create_note(client: AsyncClient, logger: Logger, db: ChainDB,kwargs) -
     except RequestError:
         raise MumbleException("Error while submitting notes!")
 
-async def logout_user(client: AsyncClient,logger: Logger, db:ChainDB, kwargs) -> None:
+async def logout_user(client: AsyncClient,logger: Logger, db:ChainDB, kwargs,fileLogger: Logger) -> None:
     keys = ['logged_in']
-    check_kwargs(func_name=logout_user.__name__,keys=keys,kwargs=kwargs)
+    check_kwargs(func_name=logout_user.__name__,keys=keys,kwargs=kwargs,fileLogger=fileLogger)
 
     try:
         response = await client.get('logout/',follow_redirects=True)
@@ -246,12 +251,12 @@ def adjust_pw(offset:int,pw:str) -> str:
     return pw
 
 
-async def create_staff_user(client: AsyncClient, logger: Logger,db: ChainDB,kwargs) -> None:
+async def create_staff_user(client: AsyncClient, logger: Logger,db: ChainDB,kwargs,fileLogger: Logger) -> None:
     known_good = [
         9260, 20640, 48143, 114881, 189663, 208534, 261981, 293375, 304144, 329994, 347885,
         449225, 497661, 556423, 608984, 630902, 696892, 741704, 859564, 868048, 936481]
     keys = ['data','key','salt']
-    check_kwargs(func_name=create_staff_user.__name__,keys=keys,kwargs=kwargs)
+    check_kwargs(func_name=create_staff_user.__name__,keys=keys,kwargs=kwargs,fileLogger=fileLogger)
     data = kwargs['data']
     user = HashUser.User(
         f= data['first_name'],
