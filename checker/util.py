@@ -128,7 +128,6 @@ async def create_ShopItem(client: AsyncClient, logger: Logger, db: ChainDB,kwarg
 
     with os.fdopen(fd,'wb+') as tmp:
             tmp.write(str.encode(license_from_template(kwargs['flag_str'])))
-            print(tmp)
             tmp.close()
     files = [
         ('cert_license',('license.txt',open(path,'rb'),'text/plain')),
@@ -142,14 +141,13 @@ async def create_ShopItem(client: AsyncClient, logger: Logger, db: ChainDB,kwarg
         response = await client.post('new_item/',data=data,files=files,headers=headers,follow_redirects=True)
     except RequestError:
         raise MumbleException("Error while submitting Shop Item")
-    print(response.status_code)
+    
     assert_equals(response.status_code, 200, "Submitting Item Form Failed!")
 
 
 async def create_ShopListing(client: AsyncClient, logger: Logger, db: ChainDB,kwargs) -> None:    
     keys = ['item_name','item_price','description']
     check_kwargs(func_name=create_ShopListing.__name__,keys=keys,kwargs=kwargs)
-    print(f"CREATE_SHOPLISTING_ITEMNAME: {kwargs['item_name']}")
     item_id = -1
     regex = f'a id="self-enlist-'+kwargs['item_name']+'" href="enlist/(.+?)">Enlist item</a>'
     

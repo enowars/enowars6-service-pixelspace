@@ -35,7 +35,7 @@ from enochecker3 import(
 from enochecker3.utils import FlagSearcher, assert_equals, assert_in
 
 logging.basicConfig(filename="/var/log/checker.log")
-logger = logging.getLogger("My_app")
+logger = logging.getLogger("Checker")
 logger.setLevel(logging.DEBUG)
 
 # create console handler with a higher log level
@@ -119,7 +119,7 @@ async def getflag_license(task: GetflagCheckerTaskMessage, client: AsyncClient, 
         response = await client.get(f"user_items/license/{item_id}",follow_redirects=True)
     except RequestError:
         raise MumbleException(f"Error while viewing LICENSE from ITEM_ID: {item_id}")
-        
+    await logout_user(client=client,logger=logger,db=db,kwargs={'logged_in':True})
     assert_in(task.flag,response.text,"ERROR - getflag_license: License Flag NOT in response!")
     
 
@@ -133,7 +133,7 @@ async def putflag_notes(task: PutflagCheckerTaskMessage, client: AsyncClient, db
     await create_note(client=client,logger=logger,db=db,kwargs=note_kwargs)
     await db.set(task.task_chain_id + "_flag", task.flag)
     await db.set(task.task_chain_id + "_user", {'user':user['username'],'password':user['password1']})
-    
+    await logout_user(client=client,logger=logger,db=db,kwargs={'logged_in':True})    
 
 
 @checker.getflag(1)
@@ -158,6 +158,7 @@ async def getflag_notes(task: GetflagCheckerTaskMessage, client: AsyncClient, db
         raise MumbleException("Error while retrieving user items!")
 
     match = re.findall(regex_notes,response.text)[0]
+    await logout_user(client=client,logger=logger,db=db,kwargs={'logged_in':True})
     assert_in(task.flag,match, 'ERROR - getflag_notes - FLAG NOT FOUND')
 
 ####################### GETNOISE AND PUTNOISE #########################
@@ -205,6 +206,7 @@ async def get_noise_base_functions(task: GetnoiseCheckerTaskMessage, client: Asy
         raise MumbleException("GET_NOISE_BASE_FUNCTIONS - Error while requesting endpoint shop!")
     if not item in response.text:
         raise MumbleException("GET_NOISE_BASE_FUNCTIONS - Error while searching for previously enlisted item!")
+    await logout_user(client=client,logger=logger,db=db,kwargs={'logged_in':True})
 
 @checker.putnoise(1)
 async def put_noise_notes(task: PutnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
@@ -238,8 +240,8 @@ async def get_noise_notes(task: GetnoiseCheckerTaskMessage, client: AsyncClient,
     except RequestError:
         raise MumbleException("Error while retrieving user items!")
 
-    print(response.text)
     match = re.findall(regex_notes,response.text)[0]
+    await logout_user(client=client,logger=logger,db=db,kwargs={'logged_in':True})
     assert_in(note,match, f"ERROR - get_noise_notes: {note} not in response")
 ############################## EXPLOITS ################################
 
