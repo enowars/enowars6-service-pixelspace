@@ -12,7 +12,7 @@ from .validators import ContentTypeRestrictedFileField, TextFileExtensionValidat
 
 class ShopItemForm(forms.ModelForm):
     name = forms.CharField(
-        max_length=50,
+        max_length=100,
         min_length=5,
         required=True,
         help_text="Enter the name of your item",

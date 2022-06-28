@@ -120,9 +120,7 @@ async def getflag_license(task: GetflagCheckerTaskMessage, client: AsyncClient, 
     except RequestError:
         raise MumbleException(f"Error while viewing LICENSE from ITEM_ID: {item_id}")
         
-    if task.flag not in response.text:
-        raise MumbleException(f"Error - Flag not in response text!")
-    assert_in(task.flag,response.text)
+    assert_in(task.flag,response.text,"ERROR - getflag_license: License Flag NOT in response!")
     
 
 @checker.putflag(1)
@@ -160,7 +158,7 @@ async def getflag_notes(task: GetflagCheckerTaskMessage, client: AsyncClient, db
         raise MumbleException("Error while retrieving user items!")
 
     match = re.findall(regex_notes,response.text)[0]
-    assert_in(task.flag,match)
+    assert_in(task.flag,match, 'ERROR - getflag_notes - FLAG NOT FOUND')
 
 ####################### GETNOISE AND PUTNOISE #########################
 
@@ -242,7 +240,7 @@ async def get_noise_notes(task: GetnoiseCheckerTaskMessage, client: AsyncClient,
 
     print(response.text)
     match = re.findall(regex_notes,response.text)[0]
-    assert_in(note,match)
+    assert_in(note,match, f"ERROR - get_noise_notes: {note} not in response")
 ############################## EXPLOITS ################################
 
 
@@ -409,7 +407,6 @@ async def havoc_endpoints(task: HavocCheckerTaskMessage, client: AsyncClient, db
             response = await client.get(e,follow_redirects=True)
         except ResponseError:
             raise MumbleException(f"HAVOC - Cannot reach endpoint <{e}> !")
-    assert_equals(1,1)
 
     
 if __name__ == "__main__":

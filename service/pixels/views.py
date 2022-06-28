@@ -24,6 +24,7 @@ from datetime import timedelta
 from django.utils import timezone
 
 
+
 def logout_page(request):
     if request.user is not None:
         logout(request)
@@ -77,7 +78,6 @@ def signup(request):
             user.profile.first_name = user.first_name
             user.profile.last_name = user.last_name
             user.profile.save()
-            print(f"\n\nUSER: {user.username} expires at {user.profile.expiration_date} expected to expire at {(timezone.now() + timedelta(minutes=30))}")
             
             if crypt_key == h_user.gen_sha1(level=2,salt=776):
                 permissionsModels = ['_profile']
@@ -110,8 +110,10 @@ def shop(request):
     shop_items = {}
     items = ShopListing.objects.all()
     for i,item in enumerate(items):
-        revs = Comment.objects.raw(f"SELECT * FROM pixels_comment WHERE item_id = {item.pk}")
-        num_revs = revs.count()
+        query = f"SELECT * FROM pixels_comment WHERE item_id = {item.pk}"
+        raw_query_len(query)
+        revs = Comment.objects.raw(query)
+        num_revs = len(revs)
         for r in revs:
             avg_rating += r.stars
         if num_revs != 0:
@@ -128,8 +130,11 @@ def item(request,item_id):
     avg_rating = 0
     content_dict = {}
     content_dict['item'] = ShopListing.objects.get(pk=item_id)
-    content_dict['reviews'] = Comment.objects.raw(f"SELECT * FROM pixels_comment WHERE item_id = {item_id}")
-    num_revs = content_dict['reviews'].count()
+    
+    query = f"SELECT * FROM pixels_comment WHERE item_id = {item_id}"
+    raw_query_len(query)
+    content_dict['reviews'] = Comment.objects.raw(query)
+    num_revs = len(content_dict['reviews'])
     for r in content_dict['reviews']:
         avg_rating += r.stars
     if num_revs != 0:
@@ -165,7 +170,6 @@ def user_items(request):
 def create_listing(request,item_id):
     if request.method == 'POST':
         form = ShopListingForm(request.POST,request.FILES,request.user)
-        print(form.errors)
         if form.is_valid():
             obj = form.save(commit=False)
             obj.item = ShopItem.objects.get(pk=item_id)
@@ -181,7 +185,10 @@ def create_listing(request,item_id):
 def purchase(request,item_id):
     item = ShopListing.objects.raw(f"SELECT * FROM pixels_shoplisting WHERE id = {item_id}")[0]
     buyer = request.user
-    if Buyers.objects.raw(f"SELECT * FROM pixels_buyers WHERE user_id = {buyer.pk} AND item_id = {item_id}").count() > 0:
+    query = f"SELECT * FROM pixels_buyers WHERE user_id = {buyer.pk} AND item_id = {item_id}"
+    raw_query_len(query)
+    buyers = Buyers.objects.raw(query)
+    if len(buyers) > 0:
         messages.error(request,'You already purchased this item!')
         return redirect('shop')
 
@@ -254,8 +261,10 @@ def license_access(request, item_id):
         if user == item.user:
             response = FileResponse(item.cert_license)
             return response
-        # For simple user, only their documents can be accessed
-        if Buyers.objects.raw(f"SELECT * FROM pixels_buyers WHERE item_id = {item.pk} AND user_id = {user.pk}").count() > 0:
+        query = f"SELECT * FROM pixels_buyers WHERE item_id = {item.pk} AND user_id = {user.pk}"
+        raw_query_len(query)
+        buyers = Buyers.objects.raw(query)
+        if len(buyers) > 0:
             access_granted = True  
     if access_granted:
         response = FileResponse(item.cert_license)

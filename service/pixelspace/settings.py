@@ -125,7 +125,7 @@ PASSWORD_HASHERS = [
 ]
 
 CRONJOBS = [
-    ('*/1 * * * *','pixels.cron.clean_up','>> /var/log/clean_up.log')
+    ('*/12 * * * *','pixels.cron.clean_up','>> /var/log/clean_up.log')
 ]
 
 # Internationalization
@@ -134,9 +134,6 @@ CRONJOBS = [
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
-
-USE_I18N = True
-
 USE_L10N = True
 
 USE_TZ = True
@@ -156,34 +153,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'mediafiles'
 
-"""
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
-        },
-        'simple': {
-            'format': '{levelname} {message}',
-            'style': '{',
-        },
-    },
-    'handlers': {
-        'file': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': '/var/log/pixelspace.log',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['file'],
-            'level': 'DEBUG',
-            'propagate': True,
-            'formatters': ['verbose'],
-        },
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+        'LOCATION': '127.0.0.1:8088/shop/',
+        'LOCATION': '127.0.0.1:8088/user_items/',
+        'LOCATION': '127.0.0.1:8088/signup/',
+        'LOCATION': '127.0.0.1:8088/login/',
     }
 }
-"""

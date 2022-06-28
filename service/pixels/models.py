@@ -13,7 +13,7 @@ from django.utils import timezone
 
 class ShopItem(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    name = models.CharField(max_length=20,db_index=True)
+    name = models.CharField(max_length=100,db_index=True)
     cert_license = ContentTypeRestrictedFileField(upload_to='uploads/licenses/',content_types=['text/plain'],max_upload_size=5000,blank=True,null=True)
     data = ContentTypeRestrictedFileField(upload_to='uploads/image_data/',content_types=['image/jpg','image/jpeg','image/bmp','image/tga','image/png'],max_upload_size=5000,blank=True,null=True)
 

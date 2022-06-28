@@ -15,7 +15,7 @@ fi
 python3 cron_startup.py
 
 python3 manage.py collectstatic --no-input
-
+python3 manage.py createcachetable
 python3 manage.py crontab add
 python3 manage.py crontab show
 python3 manage.py makemigrations --no-input
