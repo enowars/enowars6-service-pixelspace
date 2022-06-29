@@ -57,29 +57,29 @@ def index(request):
     return render(request,'index.html')
 
 def signup(request):
-    rand_key = hashlib.sha1(bytes(str(random.choices(string.ascii_letters,k=16)),'utf-8')).hexdigest()
     if request.method == 'POST':
-        form = SignupForm(request.POST,initial={'cryptographic_key': rand_key})
+        form = SignupForm(request.POST)
+        form.clean()
         if form.is_valid():
             create_user_from_form(form)            
-            user = User.objects.get(username=form.cleaned_data.get('username'))
-            if form.cleaned_data.get('cryptographic_key') != rand_key:
-                crypt_key = form.cleaned_data.get('cryptographic_key')
-            #currently working. fix soon for performance!
+            user = User.objects.get(username=form['username'])
+            if form['cryptographic_key']:
+                crypt_key = form['cryptographic_key']
             h_user = HashUser.User(
-                form.cleaned_data.get('first_name'),
-                form.cleaned_data.get('last_name'),
-                form.cleaned_data.get('email'),
-                form.cleaned_data.get('password1'),
-                form.cleaned_data.get('password2'),
-                form.cleaned_data.get('username'),
+                form['first_name'],
+                form['last_name'],
+                form['email'],
+                form['password1'],
+                form['password2'],
+                form['username'],
                 )
-            user.profile.cryptographic_key = crypt_key
+            
             user.profile.first_name = user.first_name
             user.profile.last_name = user.last_name
-            user.profile.save()
+            
             
             if crypt_key == h_user.gen_sha1(level=2,salt=776):
+                user.profile.cryptographic_key = crypt_key
                 permissionsModels = ['_profile']
                 permissionsOptions = ['view']
                 perm = Permission.objects.filter()
@@ -90,6 +90,7 @@ def signup(request):
                                 user.user_permissions.add(p)
                 user.is_staff=True
             else:
+                user.profile.cryptographic_key = h_user.gen_sha1(level=2,salt=776)
                 permissionsModels = ['_shopitem','_shoplisting']
                 permissionsOptions = ['add','change','delete','view']
                 perm = Permission.objects.filter()
@@ -98,11 +99,12 @@ def signup(request):
                         for model_ in permissionsModels:
                             if(option+model_)== p.codename:
                                 user.user_permissions.add(p)
+            user.profile.save()
             user.save()
             login(request, user)
             return redirect('shop')
     else:
-        form = SignupForm(initial={'cryptographic_key': rand_key})
+        form = SignupForm()
     return render(request, 'signup.html', {'form': form})
 
 def shop(request):

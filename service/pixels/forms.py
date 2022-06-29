@@ -62,7 +62,7 @@ class SignupForm(UserCreationForm):
         error_messages={'unique': _("A user with that username already exists.")},
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
-    cryptographic_key = forms.CharField(max_length=1000, help_text='Required. Inform a valid email address.',
+    cryptographic_key = forms.CharField(max_length=1000, help_text='Required. Inform a valid email address.',required=False,
                              widget=(forms.TextInput(attrs={'class': 'form-control'})))
 
     def __init__(self,*args,**kwargs):

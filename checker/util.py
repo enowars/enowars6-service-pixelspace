@@ -206,6 +206,7 @@ async def logout_user(client: AsyncClient,logger: Logger, db:ChainDB, kwargs,fil
         response = await client.get('logout/',follow_redirects=True)
     except RequestError:
         raise MumbleException("Error while requesting endpoint logout")
+        
 
 
 def exploitable_item_name(min_length:int) -> str: 

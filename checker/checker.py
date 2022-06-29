@@ -67,28 +67,28 @@ async def putflag_license(task: PutflagCheckerTaskMessage, client: AsyncClient, 
     }
     await create_ShopListing(client=client,logger=None,db=db,kwargs=shop_listing_kwargs,fileLogger=external_logger)
     await logout_user(client=client,logger=None,db=db,kwargs={'logged_in':True},fileLogger=external_logger)
-    await db.set(task.task_chain_id + "_flag", task.flag)
-    await db.set(task.task_chain_id + "_item", item_name)
-    await db.set(task.task_chain_id + "_user", {'user':user['username'],'password':user['password1']})
+    await db.set("flag", task.flag)
+    await db.set("item", item_name)
+    await db.set("user", {'user':user['username'],'password':user['password1']})
 
 
 @checker.getflag(0)
 async def getflag_license(task: GetflagCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
     item_id = -1
     try: 
-        user = await db.get(task.task_chain_id+"_user")
+        user = await db.get("user")
     except KeyError:
         raise MumbleException("Could not retrieve USER from ChainDB!")
 
     try:
-        flag = await db.get(task.task_chain_id+"_flag")
+        flag = await db.get("flag")
     except KeyError:
         raise MumbleException("Could not retrieve FLAG from ChainDB!")
     if flag != task.flag:
         raise MumbleException(f"Flags with task_chain_id={task.task_chain_id} are different (DB and task)!")
 
     try:
-        item_name = await db.get(task.task_chain_id+"_item")
+        item_name = await db.get("item")
     except KeyError:
         raise MumbleException("Could not retrieve ITEM_NAME from ChainDB!")    
 
@@ -124,8 +124,8 @@ async def putflag_notes(task: PutflagCheckerTaskMessage, client: AsyncClient, db
         'logged_in': True,
     }
     await create_note(client=client,logger=None,db=db,kwargs=note_kwargs,fileLogger=external_logger)
-    await db.set(task.task_chain_id + "_flag", task.flag)
-    await db.set(task.task_chain_id + "_user", {'user':user['username'],'password':user['password1']})
+    await db.set("flag", task.flag)
+    await db.set("user", {'user':user['username'],'password':user['password1']})
     await logout_user(client=client,logger=None,db=db,kwargs={'logged_in':True},fileLogger=external_logger)    
 
 
@@ -133,8 +133,8 @@ async def putflag_notes(task: PutflagCheckerTaskMessage, client: AsyncClient, db
 async def getflag_notes(task: GetflagCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
     regex_notes = '<input type="text" name="notes" value="(.+?)" maxlength="50000" required id="id_notes">'
     try: 
-        user = await db.get(task.task_chain_id+"_user")
-        flag = await db.get(task.task_chain_id+"_flag")
+        user = await db.get("user")
+        flag = await db.get("flag")
     except KeyError:
         raise MumbleException("Could not retrieve data from ChainDB!")
     if flag != task.flag:
@@ -171,7 +171,7 @@ async def put_noise_base_functions(task: PutnoiseCheckerTaskMessage, client: Asy
     
     await create_ShopItem(client=client,logger=None,db=db,kwargs=shop_item_kwargs,fileLogger=external_logger)
     shop_listing_kwargs = {
-        'item_name': item_name,
+        'item_name': item_name,""
         'item_price': random.randint(1,1000),
         'description': ''.join(secrets.choice(string.ascii_letters) for i in range(random.randint(5,25))),
         'username': user['username'],
@@ -179,14 +179,14 @@ async def put_noise_base_functions(task: PutnoiseCheckerTaskMessage, client: Asy
     }
     await create_ShopListing(client=client,logger=None,db=db,kwargs=shop_listing_kwargs,fileLogger=external_logger)
     await logout_user(client=client,logger=None,db=db,kwargs={'logged_in':True},fileLogger=external_logger)
-    await db.set(task.task_chain_id + "_item_name", item_name)
-    await db.set(task.task_chain_id + "_user", {'user':user['username'],'password':user['password1']})
+    await db.set("item_name", item_name)
+    await db.set("user", {'user':user['username'],'password':user['password1']})
 
 @checker.getnoise(0)
 async def get_noise_base_functions(task: GetnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
     try: 
-        user = await db.get(task.task_chain_id+"_user")
-        item = await db.get(task.task_chain_id+"_item_name")
+        user = await db.get("user")
+        item = await db.get("item_name")
     except KeyError:
         raise MumbleException("Could not retrieve data from ChainDB!")
     
@@ -217,15 +217,15 @@ async def put_noise_notes(task: PutnoiseCheckerTaskMessage, client: AsyncClient,
     }
     await create_note(client=client,logger=None,db=db,kwargs=note_kwargs,fileLogger=external_logger)
     await logout_user(client=client,logger=None,db=db,kwargs={'logged_in':True},fileLogger=external_logger)
-    await db.set(task.task_chain_id + "_noise", note)
-    await db.set(task.task_chain_id + "_user", {'user':user['username'],'password':user['password1']})
+    await db.set("noise", note)
+    await db.set("user", {'user':user['username'],'password':user['password1']})
 
 @checker.getnoise(1)
 async def get_noise_notes(task: GetnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
     regex_notes = '<input type="text" name="notes" value="(.+?)" maxlength="50000" required id="id_notes">'
     try: 
-        user = await db.get(task.task_chain_id+"_user")
-        note = await db.get(task.task_chain_id+"_noise")
+        user = await db.get("user")
+        note = await db.get("noise")
     except KeyError:
         raise MumbleException("Could not retrieve data from ChainDB!")
 
