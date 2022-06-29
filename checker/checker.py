@@ -1,4 +1,5 @@
 import secrets
+from xml.etree.ElementTree import PI
 from httpx import AsyncClient
 from util import *
 from essential_generators import DocumentGenerator
@@ -53,8 +54,6 @@ async def putflag_license(task: PutflagCheckerTaskMessage, client: AsyncClient, 
         'item_name': item_name,
         'logged_in': True,
         'flag_str': task.flag,
-        'username': user['username'],
-        'password': user['password1'],
     }
     
     await create_ShopItem(client=client,logger=None,db=db,kwargs=shop_item_kwargs,fileLogger=external_logger)
@@ -62,12 +61,9 @@ async def putflag_license(task: PutflagCheckerTaskMessage, client: AsyncClient, 
         'item_name': item_name,
         'item_price': 2147483646,
         'description': gen.sentence(),
-        'username': user['username'],
-        'password': user['password1'],
     }
     await create_ShopListing(client=client,logger=None,db=db,kwargs=shop_listing_kwargs,fileLogger=external_logger)
     await logout_user(client=client,logger=None,db=db,kwargs={'logged_in':True},fileLogger=external_logger)
-    await db.set("flag", task.flag)
     await db.set("item", item_name)
     await db.set("user", {'user':user['username'],'password':user['password1']})
 
@@ -79,14 +75,6 @@ async def getflag_license(task: GetflagCheckerTaskMessage, client: AsyncClient, 
         user = await db.get("user")
     except KeyError:
         raise MumbleException("Could not retrieve USER from ChainDB!")
-
-    try:
-        flag = await db.get("flag")
-    except KeyError:
-        raise MumbleException("Could not retrieve FLAG from ChainDB!")
-    if flag != task.flag:
-        raise MumbleException(f"Flags with task_chain_id={task.task_chain_id} are different (DB and task)!")
-
     try:
         item_name = await db.get("item")
     except KeyError:
@@ -113,7 +101,9 @@ async def getflag_license(task: GetflagCheckerTaskMessage, client: AsyncClient, 
     except RequestError:
         raise MumbleException(f"Error while viewing LICENSE from ITEM_ID: {item_id}")
     await logout_user(client=client,logger=None,db=db,kwargs={'logged_in':True},fileLogger=external_logger)
-    assert_in(task.flag,response.text,"ERROR - getflag_license: License Flag NOT in response!")
+    if not task.flag in response.text:
+        raise MumbleException("ERROR - getflag_license: License Flag NOT in response!")
+    #assert_in(task.flag,response.text,"ERROR - getflag_license: License Flag NOT in response!")
     
 
 @checker.putflag(1)
@@ -124,7 +114,6 @@ async def putflag_notes(task: PutflagCheckerTaskMessage, client: AsyncClient, db
         'logged_in': True,
     }
     await create_note(client=client,logger=None,db=db,kwargs=note_kwargs,fileLogger=external_logger)
-    await db.set("flag", task.flag)
     await db.set("user", {'user':user['username'],'password':user['password1']})
     await logout_user(client=client,logger=None,db=db,kwargs={'logged_in':True},fileLogger=external_logger)    
 
@@ -134,12 +123,9 @@ async def getflag_notes(task: GetflagCheckerTaskMessage, client: AsyncClient, db
     regex_notes = '<input type="text" name="notes" value="(.+?)" maxlength="50000" required id="id_notes">'
     try: 
         user = await db.get("user")
-        flag = await db.get("flag")
     except KeyError:
         raise MumbleException("Could not retrieve data from ChainDB!")
-    if flag != task.flag:
-        raise MumbleException(f"Flags with task_chain_id={task.task_chain_id} are different (DB and task)!")
-
+   
     login_kwargs={
         'username': user['user'],
         'password': user['password'],
@@ -150,9 +136,15 @@ async def getflag_notes(task: GetflagCheckerTaskMessage, client: AsyncClient, db
     except RequestError:
         raise MumbleException("Error while retrieving user items!")
 
-    match = re.findall(regex_notes,response.text)[0]
+    match = re.findall(regex_notes,response.text)
+    try:
+        match = match[0]
+    except Pixels_NotesError:
+        raise MumbleException("ERROR - getflag_notes - FLAG NOT FOUND")
     await logout_user(client=client,logger=None,db=db,kwargs={'logged_in':True},fileLogger=external_logger)
-    assert_in(task.flag,match, 'ERROR - getflag_notes - FLAG NOT FOUND')
+    if not task.flag in match:
+        raise MumbleException("ERROR - getflag_notes - FLAG NOT FOUND")
+    #assert_in(task.flag,match, 'ERROR - getflag_notes - FLAG NOT FOUND')
 
 ####################### GETNOISE AND PUTNOISE #########################
 
@@ -212,8 +204,6 @@ async def put_noise_notes(task: PutnoiseCheckerTaskMessage, client: AsyncClient,
     note_kwargs = {
         'note': note,
         'logged_in': True,
-        'username': user['username'],
-        'password': user['password1'],
     }
     await create_note(client=client,logger=None,db=db,kwargs=note_kwargs,fileLogger=external_logger)
     await logout_user(client=client,logger=None,db=db,kwargs={'logged_in':True},fileLogger=external_logger)
@@ -239,14 +229,18 @@ async def get_noise_notes(task: GetnoiseCheckerTaskMessage, client: AsyncClient,
     except RequestError:
         raise MumbleException("Error while retrieving user items!")
 
-    match = re.findall(regex_notes,response.text)[0]
+    match = re.findall(regex_notes,response.text)
+    try:
+        match = match[0]
+    except Pixels_NotesError:
+        raise MumbleException(f"ERROR - get_noise_notes: {note} not in response")
     await logout_user(client=client,logger=None,db=db,kwargs={'logged_in':True},fileLogger=external_logger)
-    assert_in(note,match, f"ERROR - get_noise_notes: {note} not in response")
+    #assert_in(note,match, f"ERROR - get_noise_notes: {note} not in response")
 ############################## EXPLOITS ################################
 
-
+"""
 async def exploit_license(searcher: FlagSearcher, client: AsyncClient, db: ChainDB) -> None:
-    item_cost = 100000000000.0
+    item_cost = 100000000000
     regex_license = '<a href="/(.+?)">View License</a>' 
     regex_item_name = re.compile(f"<td><h4>(.*)</h4>(?:.*)\n(?:.*)\n<td>{item_cost}</td>",re.MULTILINE)
     user = await register_user(client=client,logger=None,db=db,chain_id=None,fileLogger=external_logger)
@@ -304,7 +298,10 @@ async def exploit_license(searcher: FlagSearcher, client: AsyncClient, db: Chain
         except RequestError:
             raise MumbleException(f"EXPLOIT_LICENSE - Error while viewing item with id {item_id}") 
 
-        license_url = re.findall(regex_license,response.text)[0]
+        try:
+            license_url = re.findall(regex_license,response.text)[0]
+        except Pixels_ShopItemError:
+            raise MumbleException(f"E")
         try:
             response = await client.get(f"{license_url}",follow_redirects=True)
         except RequestError:
@@ -325,12 +322,11 @@ async def exploit_license(searcher: FlagSearcher, client: AsyncClient, db: Chain
 
 async def exploit_staff(searcher: FlagSearcher, client: AsyncClient, db: ChainDB,) -> None:
     key_regex = '<p>Crypt Key: (.+?)</p>'
-    """
+
     try:
         params = await db.get('note_flag')
     except DBSearchError:
         raise MumbleException("Could not retrieve data from ChainDB!")
-    """
 
     user = await register_user(client=client,logger=None,db=db,chain_id=None,fileLogger=external_logger)
     
@@ -390,7 +386,7 @@ async def exploit_staff(searcher: FlagSearcher, client: AsyncClient, db: ChainDB
 
     raise MumbleException("EXPLOIT_NOTE - Failed! No Flag Found!")
 ############################### HAVOCS #################################
-
+"""
 @checker.havoc(0)
 async def havoc_endpoints(task: HavocCheckerTaskMessage, client: AsyncClient, db: ChainDB) -> None:
     endpoints = [

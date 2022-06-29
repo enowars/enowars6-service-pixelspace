@@ -1,3 +1,4 @@
+from distutils.command.build_scripts import first_line_re
 from xml.etree.ElementTree import Comment
 from django import forms
 from pixels.models import ShopListing, ShopItem, Profile, Gift, Comment
@@ -66,8 +67,7 @@ class SignupForm(UserCreationForm):
                              widget=(forms.TextInput(attrs={'class': 'form-control'})))
 
     def __init__(self,*args,**kwargs):
-        super(SignupForm, self).__init__(*args,**kwargs)
-        self.cryptographic_key = "SOME_RANDOM_KEY_FROM_FORM"
+        super(SignupForm, self).__init__(*args,**kwargs)      
 
     class Meta:
         model = User

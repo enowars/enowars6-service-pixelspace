@@ -20,7 +20,7 @@ COPY . .
 
 
 
-RUN chmod 777 entrypoint.prod.sh
+RUN chmod 777 entrypoint.sh
 
 # run entrypoint.prod.sh
 ENTRYPOINT ["./entrypoint.sh"]

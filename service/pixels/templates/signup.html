@@ -1,7 +1,16 @@
 {% extends 'base.html' %}
-<h2>Sign up</h2>
 {% block content %}
+{# Load the tag library #}
+{% load django_bootstrap5 %}
+
+{# Load CSS and JavaScript #}
+{% bootstrap_css %}
+{% bootstrap_javascript %}
+
+{# Display django.contrib.messages as Bootstrap alerts #}
+{% bootstrap_messages %}
 <form method="post">
+
   Username : {{ form.username }}<br>
   Firstname :{{ form.first_name }}<br>
   Lastname : {{ form.last_name }}<br>

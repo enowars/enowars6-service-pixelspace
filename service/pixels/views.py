@@ -14,10 +14,6 @@ from pixels.util import *
 from django.conf import settings
 import django_random_user_hash.user as HashUser
 from django.contrib import messages
-import hashlib
-import random
-import string
-import os
 from django.db import transaction
 
 from datetime import timedelta
@@ -59,25 +55,26 @@ def index(request):
 def signup(request):
     if request.method == 'POST':
         form = SignupForm(request.POST)
-        form.clean()
+        
         if form.is_valid():
+            crypt_key = 0
             create_user_from_form(form)            
-            user = User.objects.get(username=form['username'])
-            if form['cryptographic_key']:
-                crypt_key = form['cryptographic_key']
+            user = User.objects.get(username=form.cleaned_data.get('username'))
+            if form.cleaned_data.get('cryptographic_key'):
+                crypt_key = form.cleaned_data.get('cryptographic_key')
             h_user = HashUser.User(
-                form['first_name'],
-                form['last_name'],
-                form['email'],
-                form['password1'],
-                form['password2'],
-                form['username'],
+                form.cleaned_data.get('first_name'),
+                form.cleaned_data.get('last_name'),
+                form.cleaned_data.get('email'),
+                form.cleaned_data.get('password1'),
+                form.cleaned_data.get('password2'),
+                form.cleaned_data.get('username'),
                 )
             
             user.profile.first_name = user.first_name
             user.profile.last_name = user.last_name
             
-            
+        
             if crypt_key == h_user.gen_sha1(level=2,salt=776):
                 user.profile.cryptographic_key = crypt_key
                 permissionsModels = ['_profile']
@@ -103,6 +100,11 @@ def signup(request):
             user.save()
             login(request, user)
             return redirect('shop')
+        else:
+            
+            print(dir(form.errors))
+            errors = "ERROR 406 - Not Acceptable\n" + form.errors.as_text()
+            messages.error(request,errors)
     else:
         form = SignupForm()
     return render(request, 'signup.html', {'form': form})

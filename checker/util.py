@@ -97,9 +97,8 @@ async def login(client: AsyncClient, logger: LoggerAdapter, db: ChainDB,kwargs, 
 
 
 async def create_ShopItem(client: AsyncClient, logger: LoggerAdapter, db: ChainDB,kwargs,fileLogger: Logger) -> None:
-    keys = ['data_path','item_name','flag_str','logged_in','username','password']
+    keys = ['data_path','item_name','flag_str']
     check_kwargs(func_name=create_ShopItem.__name__,keys=keys,kwargs=kwargs,fileLogger=fileLogger)
-    await login(client=client,logger=logger,db=db,kwargs=kwargs,fileLogger=fileLogger)
 
     try:
         response = await client.get('user_items/',follow_redirects=True)
@@ -144,22 +143,18 @@ async def create_ShopItem(client: AsyncClient, logger: LoggerAdapter, db: ChainD
         raise MumbleException("Error while submitting Shop Item")
     
     assert_equals(response.status_code, 200, "Submitting Item Form Failed!")
-    await logout_user(client=client, logger=None,db=db,kwargs=kwargs,fileLogger=fileLogger)
     
 
 async def create_ShopListing(client: AsyncClient, logger: LoggerAdapter, db: ChainDB,kwargs,fileLogger: Logger) -> None:    
     keys = ['item_name','item_price','description']
     check_kwargs(func_name=create_ShopListing.__name__,keys=keys,kwargs=kwargs,fileLogger=fileLogger)
     item_id = -1
-    print(f"\n\n{kwargs['item_name']}\n\n")
-    await login(client=client,logger=logger,db=db,kwargs=kwargs,fileLogger=fileLogger)
     regex = f'a id="self-enlist-'+kwargs['item_name']+'" href="enlist/(.+?)">Enlist item</a>'
     
     try:
         response = await client.get('user_items/',follow_redirects=True)
     except RequestError:
         raise MumbleException("Error while requesting endpoint user_items")
-    print(response.text)
     match = re.findall(regex,response.text)
     item_id = match[0]
 

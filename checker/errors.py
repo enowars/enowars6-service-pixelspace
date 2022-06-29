@@ -33,3 +33,6 @@ class Pixels_ShopListingError(PixelsException):
 
 class Pixels_GiftCodeError(PixelsException):
     pass
+
+class Pixels_NotesError(PixelsException):
+    pass
