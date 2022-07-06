@@ -99,12 +99,14 @@ def signup(request):
             user.profile.save()
             user.save()
             login(request, user)
+            print(f"Registered USER {user.username}")
             return redirect('shop')
         else:
             
-            print(dir(form.errors))
+            
             errors = "ERROR 406 - Not Acceptable\n" + form.errors.as_text()
             messages.error(request,errors)
+            return render(request, 'signup.html', {'form': form},status=406)
     else:
         form = SignupForm()
     return render(request, 'signup.html', {'form': form})
@@ -157,7 +159,8 @@ def create_item(request):
             obj.user = request.user
             obj.cert_licencse = form.cleaned_data.get('cert_licencse')
             obj.data = form.cleaned_data.get('data')
-            obj.save()         
+            obj.save()       
+            print(f"CREATED ITEM with name: {obj.name}")  
             return redirect('shop')
     else:
         form = ShopItemForm()
@@ -180,6 +183,7 @@ def create_listing(request,item_id):
             obj.description = form.cleaned_data.get('description')
             obj.sold = 0
             obj.save()
+            print(f"CREATEd LISTING for item: {obj.item.name}")
             return redirect('shop')
     else:
         form = ShopListingForm()
@@ -206,6 +210,7 @@ def purchase(request,item_id):
         buyer.profile.save()
         set_buyer(buyer,item.item.name)
         item.sold +=1
+        print(f"USER: {request.user} bought item: {item.item.name}")
         item.save()
     else:
         messages.error(request,'You cannot aford to buy this item!')

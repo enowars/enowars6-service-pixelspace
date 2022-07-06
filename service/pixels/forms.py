@@ -50,11 +50,14 @@ class SignupForm(UserCreationForm):
                                widget=(forms.TextInput(attrs={'class': 'form-control'})))
     email = forms.EmailField(max_length=100, help_text='Required. Inform a valid email address.',
                              widget=(forms.TextInput(attrs={'class': 'form-control'})))
-    password1 = forms.CharField(label=_('Password'),
-                                widget=(forms.PasswordInput(attrs={'class': 'form-control'})),
-                                help_text=password_validation.password_validators_help_text_html())
-    password2 = forms.CharField(label=_('Password Confirmation'), widget=forms.PasswordInput(attrs={'class': 'form-control'}),
-                                help_text=_('Just Enter the same password, for confirmation'))
+    password1 = forms.CharField(
+        label=_('Password'),
+        widget=(forms.PasswordInput(attrs={'class': 'form-control'})),
+        help_text=password_validation.password_validators_help_text_html())
+    password2 = forms.CharField(
+        label=_('Password Confirmation'),
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        help_text=_('Just Enter the same password, for confirmation'))
     username = forms.CharField(
         label=_('Username'),
         max_length=150,
