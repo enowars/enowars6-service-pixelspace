@@ -14,8 +14,8 @@ urlpatterns = [
     
     #shop
     path('shop/',views.shop,name='shop'),
-    path('shop/<int:item_id>/',views.item,name="itemPage"),
-    path('shop/purchase/<int:item_id>/',views.purchase,name="purchasePage"),
+    path('shop/item/<int:item_id>/',views.item,name="itemPage"),
+    path('shop/item/purchase/<int:item_id>/',views.purchase,name="purchasePage"),
 
     #user
     path('user_items/',views.user_items,name='items'),

@@ -26,13 +26,13 @@ class ShopListing(models.Model):
 
 class Comment(models.Model):
     item = models.ForeignKey(ShopListing,on_delete=models.CASCADE,db_index=True,related_name="item_listing")
-    user = models.ForeignKey(User,on_delete=models.SET("Unkown User"),db_index=True,related_name="creator")
+    user = models.ForeignKey(User,on_delete=models.CASCADE,db_index=True,related_name="creator")
     content = models.CharField(max_length=200)
     stars = models.IntegerField(validators=[MinValueValidator(0),MaxValueValidator(5)],default=3)
     date = models.CharField(max_length=50)
 
 class Buyers(models.Model):
-    user = models.ForeignKey(User,on_delete=models.SET("Unkown User"),db_index=True,related_name="buyer_user")
+    user = models.ForeignKey(User,on_delete=models.CASCADE,db_index=True,related_name="buyer_user")
     item = models.ForeignKey(ShopItem,on_delete=models.DO_NOTHING,db_index=True,related_name="buyer_item")
     data = models.CharField(max_length=100)
 
@@ -43,7 +43,7 @@ class Profile(models.Model):
     balance = models.IntegerField(validators=[MinValueValidator(0),MaxValueValidator(2147483647)])
     cryptographic_key = models.CharField(max_length=1000,default="None")
     notes = models.CharField(max_length=50000,default="You can enter your notes here...")
-    expiration_date = models.DateTimeField(default=(timezone.now() + timedelta(minutes=11)),blank=True,null=True)
+    expiration_date = models.DateTimeField(blank=True,null=True)
 
 @receiver(post_save,sender=User)
 def create_user_profile(sender, instance, created, **kwargs):

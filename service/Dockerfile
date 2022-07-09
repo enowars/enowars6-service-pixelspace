@@ -17,7 +17,7 @@ COPY ./requirements.txt .
 RUN apk update && apk add libpq
 RUN pip install -r requirements.txt
 COPY . .
-
+COPY ./static/ staticfiles/
 
 
 RUN chmod 777 entrypoint.sh

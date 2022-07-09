@@ -16,7 +16,7 @@ There are {{shop_items|length}} objects in the shop:
     <td>Price: {{ s.item.price }}</td><br>
     <td>Description: {{ s.item.description }}</td><br>
     <ts>Rating: {{ s.rating }} (avg. from {{ s.num_reviews }})</ts>
-    <td><a id="viewable-{{s.item.item.name}}" href="{{s.item.pk}}">View item</a></td><br>
+    <td><a id="viewable-{{s.item.item.name}}" href="item/{{s.item.pk}}">View item</a></td><br>
     <td>{{ s.item.sold }} sold</td><br>
     <br>
 {% endfor %}

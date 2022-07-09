@@ -2,8 +2,7 @@ import secrets
 from httpx import AsyncClient
 from util import *
 from essential_generators import DocumentGenerator
-from logger import CustomFormatter
-import logging
+import html
 from datetime import datetime
 
 
@@ -12,7 +11,6 @@ from enochecker3 import(
     Enochecker,
 
     MumbleException,
-    InternalErrorException,
 
     #FLAG-Message-Tasks
     GetflagCheckerTaskMessage,
@@ -34,7 +32,7 @@ checker = Enochecker("Pixelspace",8010)
 def app(): return checker.app
 ####################### GETFLAG AND PUTFLAG #########################
 @checker.putflag(0)
-async def putflag_license(task: PutflagCheckerTaskMessage, client: AsyncClient, db: ChainDB,logger: LoggerAdapter) -> None:   
+async def putflag_license(task: PutflagCheckerTaskMessage, client: AsyncClient, db: ChainDB,logger: LoggerAdapter) -> str:   
     t1 = datetime.now()
     item_name = exploitable_item_name(min_length=5).upper()
     user = await register_user(client=client,logger=logger,db=db,chain_id=task.task_chain_id)
@@ -43,45 +41,45 @@ async def putflag_license(task: PutflagCheckerTaskMessage, client: AsyncClient, 
     logger.debug(f"Time - putflag_license (register_user) {d1.microseconds} microsecs")
     shop_item_kwargs =  {
         'data_path': '/frog.png',
-        'item_name': item_name,
+        'item_name': html.escape(item_name),
         'logged_in': True,
         'flag_str': task.flag,
         'username': user['username'],
         'password': user['password1'],
     }
     
-    await create_ShopItem(client=client,logger=logger,db=db,kwargs=shop_item_kwargs)
+    item_id = await create_ShopItem(client=client,logger=logger,db=db,kwargs=shop_item_kwargs)
     t3 = datetime.now()
     d2 = t3-t2
     logger.debug(f"Time - putflag_license (create_ShopItem) {d2.microseconds} microsecs")
     shop_listing_kwargs = {
-        'item_name': item_name,
+        'item_id': item_id,
         'item_price': 2147483646,
-        'description': gen.sentence(),
+        'description': html.escape(gen.sentence()),
         'username': user['username'],
         'password': user['password1'],
     }
     logger.debug(f"ID={task.task_chain_id} PUTFLAG_LICENSE: username:{user['username']} , password: {user['password1']} , item_name: {item_name}")
-    await create_ShopListing(client=client,logger=logger,db=db,kwargs=shop_listing_kwargs)
+    listing_id = await create_ShopListing(client=client,logger=logger,db=db,kwargs=shop_listing_kwargs)
     t4 = datetime.now()
     d3 = t4-t3
     logger.debug(f"Time - putflag_license (create_ShopListing) {d3.microseconds} microsecs")
     await logout_user(client=client,logger=logger,db=db,kwargs={'logged_in':True})
     t5 = datetime.now()
     d4 = t5-t4
-    logger.debug(f"Time - putflag_license (logout_user) {d3.microseconds} microsecs")
+    logger.debug(f"Time - putflag_license (logout_user) {d4.microseconds} microsecs")
     await db.set("flag", task.flag)
-    await db.set("item", item_name)
+    await db.set("item_id", item_id)
     await db.set("user", {'user':user['username'],'password':user['password1']})
     t6 = datetime.now()
     d5 = t6-t5
-    logger.debug(f"Time - putflag_license (create_ShopListing) {d3.microseconds} microsecs")
+    logger.debug(f"Time - putflag_license (create_ShopListing) {d5.microseconds} microsecs")
     
+    return json.dumps({'item_id':item_id})
 
 
 @checker.getflag(0)
 async def getflag_license(task: GetflagCheckerTaskMessage, client: AsyncClient, db: ChainDB,logger: LoggerAdapter) -> None:
-    item_id = -1
     try: 
         user = await db.get("user")
     except KeyError:
@@ -95,7 +93,7 @@ async def getflag_license(task: GetflagCheckerTaskMessage, client: AsyncClient, 
         raise MumbleException(f"Flags with task_chain_id={task.task_chain_id} are different (DB and task)!")
 
     try:
-        item_name = await db.get("item")
+        item_id = await db.get("item_id")
     except KeyError:
         raise MumbleException("Could not retrieve ITEM_NAME from ChainDB!")    
 
@@ -105,31 +103,23 @@ async def getflag_license(task: GetflagCheckerTaskMessage, client: AsyncClient, 
     }
     await login(client=client,logger=logger,db=db,kwargs=login_kwargs)
     try:
-        response = await client.get('user_items/',follow_redirects=True)
+        response = await client.get(f'user_items/{item_id}',follow_redirects=True)
     except RequestError:
         raise MumbleException("Error while retrieving user items!")
     
-    regex_item = f'<a id="self-view-'+item_name+'" href="(.+?)">View Item</a>'
-    match = re.findall(regex_item,response.text)
-    try:
-        item_id = match[0]
-    except:
-        raise MumbleException("ERROR - getflag_license: LICENSE HAS NO REGEX-MATCH")
-    if item_id == -1:
-        raise MumbleException("ERROR - getflag_license: ITEM-ID CONTAINING FLAG NOT FOUND!")
     try:
         response = await client.get(f"user_items/license/{item_id}",follow_redirects=True)
     except RequestError:
         raise MumbleException(f"ERROR - getflag_license: VIEWING LICENSE FROM ITEM_ID: {item_id} !")
     await logout_user(client=client,logger=logger,db=db,kwargs={'logged_in':True})
-    assert_in(task.flag,response.text,"ERROR - getflag_license: FLAG NOT IN LICENSE!")
+    assert_in(html.escape(task.flag),response.text,"ERROR - getflag_license: FLAG NOT IN LICENSE!")
     
 
 @checker.putflag(1)
-async def putflag_notes(task: PutflagCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter) -> None:    
+async def putflag_notes(task: PutflagCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter) -> str:    
     user = await register_user(client=client,logger=logger,db=db,chain_id=task.task_chain_id)
     note_kwargs = {
-        'note':task.flag,
+        'note': task.flag,
         'logged_in': True,
     }
     logger.debug(f"ID={task.task_chain_id} PUTFLAG_NOTES: username:{user['username']} , password: {user['password1']} , note_flag: {task.flag}")
@@ -138,6 +128,7 @@ async def putflag_notes(task: PutflagCheckerTaskMessage, client: AsyncClient, db
     await db.set("user", {'user':user['username'],'password':user['password1']})
     await logout_user(client=client,logger=logger,db=db,kwargs={'logged_in':True})    
 
+    return json.dumps({'username':user['username']})
 
 @checker.getflag(1)
 async def getflag_notes(task: GetflagCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter) -> None:
@@ -160,14 +151,9 @@ async def getflag_notes(task: GetflagCheckerTaskMessage, client: AsyncClient, db
     except RequestError:
         raise MumbleException("Error while retrieving user items!")
 
-    match = re.findall(regex_notes,response.text)
-    try:
-        match = match[0]
-        logger.debug(f"{match}\n\n{response.text}")
-    except:
-        raise MumbleException("ERROR - getflag_notes - RESPONSE NOT REGEX-MATCHABLE")
+   
     await logout_user(client=client,logger=logger,db=db,kwargs={'logged_in':True})
-    assert_in(task.flag,match, 'ERROR - getflag_notes - FLAG NOT FOUND')
+    assert_in(html.escape(task.flag),response.text, 'ERROR - getflag_notes - FLAG NOT FOUND')
 
 ####################### GETNOISE AND PUTNOISE #########################
 
@@ -184,25 +170,26 @@ async def put_noise_base_functions(task: PutnoiseCheckerTaskMessage, client: Asy
         'password': user['password1'],
     }
     logger.debug(f"ID={task.task_chain_id} PUT_NOISE_BASE_FUNCTIONS (CREATE_SHOPITEM): username:{user['username']} , password: {user['password1']} , item_name: {item_name}")
-    await create_ShopItem(client=client,logger=logger,db=db,kwargs=shop_item_kwargs)
+    item_id = await create_ShopItem(client=client,logger=logger,db=db,kwargs=shop_item_kwargs)
+    logger.debug(f"ID={task.task_chain_id} PUT_NOISE_BASE_FUNCTIONS (CREATE_SHOPITEM): item_id: {item_id}")
     shop_listing_kwargs = {
-        'item_name': item_name,
+        'item_id': item_id,
         'item_price': random.randint(1,1000),
         'description': ''.join(secrets.choice(string.ascii_letters) for i in range(random.randint(5,25))),
         'username': user['username'],
         'password': user['password1'],
     }
-    logger.debug(f"ID={task.task_chain_id} PUT_NOISE_BASE_FUNCTIONS (CREATE_SHOPLISTING): item_name: {shop_listing_kwargs['item_name']} , price: {shop_listing_kwargs['item_price']} , {shop_listing_kwargs['description']}")
-    await create_ShopListing(client=client,logger=logger,db=db,kwargs=shop_listing_kwargs)
+    logger.debug(f"ID={task.task_chain_id} PUT_NOISE_BASE_FUNCTIONS (CREATE_SHOPLISTING): item_id: {shop_listing_kwargs['item_id']} , price: {shop_listing_kwargs['item_price']} , {shop_listing_kwargs['description']}")
+    listing_id = await create_ShopListing(client=client,logger=logger,db=db,kwargs=shop_listing_kwargs)
     await logout_user(client=client,logger=logger,db=db,kwargs={'logged_in':True})
-    await db.set("item_name", item_name)
+    await db.set("item_id", item_id)
     await db.set("user", {'user':user['username'],'password':user['password1']})
 
 @checker.getnoise(0)
 async def get_noise_base_functions(task: GetnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB, logger: LoggerAdapter) -> None:
     try: 
         user = await db.get("user")
-        item = await db.get("item_name")
+        item_id = await db.get("item_id")
     except KeyError:
         raise MumbleException("Could not retrieve data from ChainDB!")
     
@@ -214,11 +201,9 @@ async def get_noise_base_functions(task: GetnoiseCheckerTaskMessage, client: Asy
     await login(client=client,logger=logger,db=db,kwargs=login_kwargs)
 
     try:
-        response = await client.get('shop',follow_redirects=True)
+        response = await client.get(f'user_items/{item_id}',follow_redirects=True)
     except RequestError:
-        raise MumbleException("GET_NOISE_BASE_FUNCTIONS - Error while requesting endpoint shop!")
-    if not item in response.text:
-        raise MumbleException("GET_NOISE_BASE_FUNCTIONS - Error while searching for previously enlisted item!")
+        raise MumbleException("GET_NOISE_BASE_FUNCTIONS - Error while requesting item from user_items!")
     await logout_user(client=client,logger=logger,db=db,kwargs={'logged_in':True})
 
 @checker.putnoise(1)
@@ -239,7 +224,6 @@ async def put_noise_notes(task: PutnoiseCheckerTaskMessage, client: AsyncClient,
 
 @checker.getnoise(1)
 async def get_noise_notes(task: GetnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB,logger: LoggerAdapter) -> None:
-    regex_notes = '<input type="text" name="notes" value="(.+?)" maxlength="50000" required id="id_notes">'
     try: 
         user = await db.get("user")
         note = await db.get("noise")
@@ -256,13 +240,9 @@ async def get_noise_notes(task: GetnoiseCheckerTaskMessage, client: AsyncClient,
     except RequestError:
         raise MumbleException("ERROR - get_noise_notes: COULD NOT RETRIEVE USER NOTES!")
 
-    match = re.findall(regex_notes,response.text)
-    try:
-        match = match[0]
-    except:
-        raise MumbleException("ERROR - get_noise_notes: NO REGEX-MATCH IN NOTE")
+    assert_in(html.escape(note),response.text, f"ERROR - get_noise_notes: {note} NOT IN RESPONSE")
     await logout_user(client=client,logger=logger,db=db,kwargs={'logged_in':True})
-    assert_in(note,match, f"ERROR - get_noise_notes: {note} NOT IN RESPONSE")
+    
 ############################## EXPLOITS ################################
 
 """

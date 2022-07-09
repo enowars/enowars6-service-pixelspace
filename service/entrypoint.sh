@@ -20,6 +20,7 @@ python3 manage.py crontab add
 python3 manage.py crontab show
 python3 manage.py makemigrations --no-input
 python3 manage.py migrate
+python3 manage.py migrate pixels
 
 python3 manage.py createsuperuser --username root --no-input
 

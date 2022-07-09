@@ -13,3 +13,9 @@ body{
 #orders-pending{
     background-color: #7cd1c0;
 }
+
+.notes-textarea{
+    height: 500px;
+    width: 500px;
+    resize: none;
+}

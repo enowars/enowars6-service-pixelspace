@@ -101,7 +101,7 @@ async def login(client: AsyncClient, logger: LoggerAdapter, db: ChainDB,kwargs) 
     assert_equals(response.status_code, 200,"Login failed")
 
 
-async def create_ShopItem(client: AsyncClient, logger: LoggerAdapter, db: ChainDB,kwargs) -> None:
+async def create_ShopItem(client: AsyncClient, logger: LoggerAdapter, db: ChainDB,kwargs) -> int:
     t0 = datetime.now()
     keys = ['data_path','item_name','flag_str','logged_in','username','password']
     check_kwargs(func_name=create_ShopItem.__name__,keys=keys,kwargs=kwargs,logger=logger)
@@ -157,52 +157,40 @@ async def create_ShopItem(client: AsyncClient, logger: LoggerAdapter, db: ChainD
     d4 = t4 -t3
     logger.debug(f"Time - create_ShopItem (post new_item) {d4.microseconds} microsecs")
     assert_equals(response.status_code, 200, "Submitting Item Form Failed!")
-   
-    #await logout_user(client=client, logger=None,db=db,kwargs=kwargs)
+    return str(response.url).split("/")[4]
    
     
 
-async def create_ShopListing(client: AsyncClient, logger: LoggerAdapter, db: ChainDB,kwargs) -> None:    
+async def create_ShopListing(client: AsyncClient, logger: LoggerAdapter, db: ChainDB,kwargs) -> int:    
     t0 = datetime.now()
-    keys = ['item_name','item_price','description']
+    keys = ['item_id','item_price','description']
     check_kwargs(func_name=create_ShopListing.__name__,keys=keys,kwargs=kwargs,logger=logger)
-    item_id = -1
-    regex = 'a id="self-enlist-'+kwargs['item_name']+'" href="enlist/(.+?)">Enlist item</a>'
+    item_id = kwargs['item_id']
     try:
-        response = await client.get('user_items/',follow_redirects=True)
+        response = await client.get(f'user_items/enlist/{item_id}',follow_redirects=True)
     except RequestError:
         raise MumbleException("Error while requesting endpoint user_items")
     t1 = datetime.now()
     d1 = t1 -t0
     logger.debug(f"Time - create_ShopListing (get user_items) {d1.microseconds} microsecs")
 
-    match = re.findall(regex,response.text)
+    t2 = datetime.now()
+    d2 = t2 -t1
+    logger.debug(f"Time - create_ShopListing (finding item_id) {d2.microseconds} microsecs")
+    data = {
+        'price': kwargs['item_price'],
+        'description': kwargs['description'],
+        'next': 'shop/',
+    }
     try:
-        item_id = match[0]
+        response = await client.post(f'user_items/enlist/{item_id}',data=data)
     except:
-        raise MumbleException("ERROR - CREATE_SHOPLISTING: Response has no REGEX-MATCH")
-
-    if item_id == -1:
-        raise Pixels_ShopItemError(f"Error while creating Shop Listing! Could not find ID for item with name {kwargs['item_name']}")
-    else:
-        t2 = datetime.now()
-        d2 = t2 -t1
-        logger.debug(f"Time - create_ShopListing (finding item_id) {d2.microseconds} microsecs")
-        data = {
-            'price': kwargs['item_price'],
-            'description': kwargs['description'],
-            'next': 'shop/',
-        }
-
-        try:
-            response = await client.post(f'user_items/enlist/{item_id}',data=data)
-        except:
-            raise RequestError('Error while submitting Shop Listing!')
-        t3 = datetime.now()
-        d3 = t3 -t2
-        logger.debug(f"Time - create_ShopListing (post enlist) {d3.microseconds} microsecs")
-        assert_equals(response.status_code,302,"CREATE - Shop Listing Form Failed!")
-        
+        raise RequestError('Error while submitting Shop Listing!')
+    t3 = datetime.now()
+    d3 = t3 -t2
+    logger.debug(f"Time - create_ShopListing (post enlist) {d3.microseconds} microsecs")
+    assert_equals(response.status_code,302,"CREATE - Shop Listing Form Failed!")
+    return str(response.url).split("/")[5]
 
 async def create_note(client: AsyncClient, logger: Logger, db: ChainDB,kwargs) -> None:
     t0 = datetime.now()

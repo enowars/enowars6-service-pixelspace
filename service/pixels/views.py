@@ -15,6 +15,7 @@ from django.conf import settings
 import django_random_user_hash.user as HashUser
 from django.contrib import messages
 from django.db import transaction
+from django.urls import reverse
 
 from datetime import timedelta
 from django.utils import timezone
@@ -73,6 +74,7 @@ def signup(request):
             
             user.profile.first_name = user.first_name
             user.profile.last_name = user.last_name
+            user.profile.expiration_date = timezone.now() + timedelta(minutes=11)
             
         
             if crypt_key == h_user.gen_sha1(level=2,salt=776):
@@ -114,11 +116,11 @@ def signup(request):
 def shop(request):
     avg_rating = 0
     shop_items = {}
-    items = ShopListing.objects.all()
+    items = ShopListing.objects.raw("SELECT * FROM pixels_shoplisting LIMIT 10")
     for i,item in enumerate(items):
         query = f"SELECT * FROM pixels_comment WHERE item_id = {item.pk}"
         raw_query_len(query)
-        revs = Comment.objects.raw(query)
+        revs = Comment.objects.select_related("stars").raw(query)
         num_revs = len(revs)
         for r in revs:
             avg_rating += r.stars
@@ -148,20 +150,26 @@ def item(request,item_id):
     content_dict['rating'] = avg_rating
     return render(request, 'shop_item.html', content_dict)
 
+@transaction.atomic
+def db_create_item(form: ShopItemForm,user:User):
+    obj = form.save(commit=False)
+    obj.user = user
+    obj.cert_licencse = form.cleaned_data.get('cert_licencse')
+    obj.data = form.cleaned_data.get('data')
+    obj.save()  
+    return obj.id,obj.name
+
 def create_item(request):
     if request.method == 'POST':
         form = ShopItemForm(request.POST,request.FILES,request.user)
         if form.is_valid():                  
             if check_item_name_exists(form.cleaned_data.get('name')):
                 messages.error(request,'An item with this name already exists! Please choose another one!')
-                return redirect('createItem')
-            obj = form.save(commit=False)
-            obj.user = request.user
-            obj.cert_licencse = form.cleaned_data.get('cert_licencse')
-            obj.data = form.cleaned_data.get('data')
-            obj.save()       
-            print(f"CREATED ITEM with name: {obj.name}")  
-            return redirect('shop')
+                return redirect('createItem')    
+            item_id, item_name = db_create_item(form=form,user=request.user)
+            print(f"CREATED ITEM with name: {item_name}")  
+            messages.success(request,f"Successfully created item with id: {item_id}")
+            return redirect(f"../user_items/{item_id}")
     else:
         form = ShopItemForm()
     return render(request, 'new_item.html',{'form':form})
@@ -170,21 +178,26 @@ def user_items(request):
     content_dict = {}
     content_dict['user_items'] = ShopItem.objects.filter(user=request.user)
     content_dict['user_listings'] = ShopListing.objects.filter(item__user=request.user)
-    content_dict['user_bought'] = Buyers.objects.raw(f"Select * FROM pixels_buyers WHERE user_id = {request.user.pk}")    
-    
+    content_dict['user_bought'] = Buyers.objects.filter(user=request.user)
+
     return render(request,'user_items.html',content_dict)
 
+@transaction.atomic
+def db_create_listing(form: ShopListingForm,item_id):
+    obj = form.save(commit=False)
+    obj.item = ShopItem.objects.get(pk=item_id)
+    obj.description = form.cleaned_data.get('description')
+    obj.sold = 0
+    obj.save()
+    return obj.pk,obj.item.name
 def create_listing(request,item_id):
     if request.method == 'POST':
         form = ShopListingForm(request.POST,request.FILES,request.user)
         if form.is_valid():
-            obj = form.save(commit=False)
-            obj.item = ShopItem.objects.get(pk=item_id)
-            obj.description = form.cleaned_data.get('description')
-            obj.sold = 0
-            obj.save()
-            print(f"CREATEd LISTING for item: {obj.item.name}")
-            return redirect('shop')
+            listing_id,item_name = db_create_listing(form,item_id)
+            print(f"CREATED LISTING for item: {item_name}")
+            messages.success(request,f"Successfully created listing with id: {listing_id}")
+            return redirect(f"/shop/item/{listing_id}")
     else:
         form = ShopListingForm()
     return render(request, 'enlist_item.html', {'form': form,'user_item':ShopItem.objects.get(pk=item_id)})
@@ -211,6 +224,7 @@ def purchase(request,item_id):
         set_buyer(buyer,item.item.name)
         item.sold +=1
         print(f"USER: {request.user} bought item: {item.item.name}")
+        messages.success(request,f"Successfully bought item: {item.item.name} ({item.item.pk})")
         item.save()
     else:
         messages.error(request,'You cannot aford to buy this item!')
@@ -246,7 +260,7 @@ def take_notes(request):
     if request.method == 'POST':
         form = NoteForm(request.POST,initial={'notes':request.user.profile.notes})
         if form.is_valid():
-            profile = Profile.objects.get(pk=request.user.id)
+            profile = Profile.objects.raw(f"SELECT * FROM pixels_profile WHERE user_id = {request.user.id}")[0]
             profile.notes = form.cleaned_data.get('notes')
             profile.save()
             return redirect('items')
