@@ -3,3 +3,4 @@ pymongo
 requests
 python-string-utils
 essential-generators
+enochecker_test

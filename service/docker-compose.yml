@@ -23,8 +23,10 @@ services:
     image: postgres:14.0-alpine
     volumes:
       - postgres_data:/var/lib/postgresql/data/
+      - ./postgresql.conf:/etc/postgresql.conf
     env_file:
       - ./.env.db
+    command: "postgres -c config_file=/etc/postgresql.conf"
   nginx:
     restart: unless-stopped
     container_name: Pixelspace_rev_proxy
@@ -36,6 +38,11 @@ services:
       - 8010:80
     depends_on:
       - web
+  redis:
+    image: redis:latest
+    container_name: Pixelspace_redis
+    restart: always
+
 volumes:
   postgres_data:
   static_volume:

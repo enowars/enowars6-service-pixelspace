@@ -19,7 +19,7 @@
           <a class="nav-link active" href="{% url 'shop' page_num=1 %}">Shop</a>
         </li>
 
-        {% if user.is_authenticated %}
+        {% if request.session.auth %}
         <li class="nav-item active">
           <a class="nav-link" href="{% url 'items' %}">Profile</a>
         </li>
@@ -41,9 +41,9 @@
         {% endif %}
       </ul>
     </div>
-    {% if user.is_authenticated %}
-    <span class="status-msg">Hello, {{request.user}}</span>
-    <span class="status-msg">Credits: {{request.user.profile.balance}}</span>
+    {% if request.session.auth %}
+    <span class="status-msg">Hello, {{request.session.username }}</span>
+    <span class="status-msg">Credits: {{request.session.balance }}</span>
     <span><a class="status-msg" href="{% url 'logout' %}">Logout</a></span>
     {% else %}
     <span><a class="status-msg" href="{% url 'login' %}">Login</a></span>

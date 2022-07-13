@@ -182,7 +182,6 @@ async def get_noise_base_functions(task: GetnoiseCheckerTaskMessage, client: Asy
     
 @checker.putnoise(1)
 async def put_noise_notes(task: PutnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB,logger: LoggerAdapter) -> None:
-    return
     t0 = datetime.now()
     user = await register_user(client=client,logger=logger,db=db,chain_id=None)
     note = gen.sentence()
@@ -202,7 +201,6 @@ async def put_noise_notes(task: PutnoiseCheckerTaskMessage, client: AsyncClient,
 
 @checker.getnoise(1)
 async def get_noise_notes(task: GetnoiseCheckerTaskMessage, client: AsyncClient, db: ChainDB,logger: LoggerAdapter) -> None:
-    return
     t0 = datetime.now()
     try: 
         user = await db.get("user")
@@ -229,7 +227,6 @@ async def get_noise_notes(task: GetnoiseCheckerTaskMessage, client: AsyncClient,
 
 @checker.havoc(0)
 async def havoc_endpoints(task: HavocCheckerTaskMessage, client: AsyncClient,logger: LoggerAdapter) -> None:
-    return
     t0 = datetime.now()
     endpoints = [
         '',
@@ -239,27 +236,19 @@ async def havoc_endpoints(task: HavocCheckerTaskMessage, client: AsyncClient,log
         'new_item/',
        
     ]
-    endpoint_names = [
-        "home",
-        "signup",
-        "login",
-        "shop (P1)",
-        "item_creation",
-    ]
-    for i,e in enumerate(endpoints):
+    for e in endpoints:
         try:
             logger.debug(f"REQUESTURL: {client.base_url} {e}")
             response = await client.get(e,follow_redirects=True)
-            logger.debug(f"HAVOC - Endpoint {endpoint_names[i]} reachable")
+            logger.debug(f"HAVOC - Endpoint {e} reachable")
         except RequestError:
-            raise MumbleException(f"HAVOC - Cannot reach endpoint {endpoint_names[i]} !")
+            raise MumbleException(f"HAVOC - Cannot reach endpoint {e} !")
     t1 = datetime.now()
     logger.debug(f"HAVOC_ENDPOINTS - Total time {(t1-t0).total_seconds()} s")
 
 
 @checker.havoc(1)
 async def havoc_default_user_params(task: HavocCheckerTaskMessage, client: AsyncClient, logger: LoggerAdapter,db: ChainDB) -> None:
-    return
     t0=datetime.now()
     user = await register_user(client=client,logger=logger,db=db,chain_id=None)
     try:

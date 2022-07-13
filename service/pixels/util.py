@@ -1,5 +1,4 @@
-from pixels.models import Buyers, ShopItem, ShopListing
-from django.contrib.auth.models import User
+from pixels.models import Buyers, ShopItem, ShopListing,User
 from django.contrib.auth.signals import user_login_failed
 from django.core.exceptions import PermissionDenied, ImproperlyConfigured
 from django.utils.module_loading import import_string
@@ -21,6 +20,7 @@ _key = _random_gen.read(KEY_LENGTH)
 
 def check_item_name_exists(name: str) -> bool:
     query = f"SELECT * FROM pixels_shopitem WHERE name = '{name}'"
+
     items = ShopItem.objects.raw(query)    
     if len(items) == 0:
         return False
@@ -35,16 +35,6 @@ def set_buyer(user: User, name: str) -> bool:
                 data=datetime.strftime(datetime.now(), "%d/%m/%y %H:%M")
             )
     buyer.save()
-
-def create_user_from_form(form: SignupForm) -> User:
-    user = User.objects.create(
-        username= form.cleaned_data.get('username'),
-        first_name= form.cleaned_data.get('first_name'),
-        last_name = form.cleaned_data.get('last_name')
-    )
-    user.set_password(form.cleaned_data.get('password1'))
-    user.save()
-    return user
 
 def raw_query_len( query ):  
     def __len__( self ):

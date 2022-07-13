@@ -35,14 +35,14 @@ INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
-    'django.contrib.sessions',
+    #'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.postgres',
     'pixels',
     'django_bootstrap5',
-    'django_random_user_hash',
     'django_crontab',
+    'django_redis',
 ]
 
 MIDDLEWARE = [
@@ -60,6 +60,7 @@ FILE_UPLOAD_HANDLERS = [
  ]
 
 ROOT_URLCONF = 'pixelspace.urls'
+
 
 TEMPLATES = [
     {
@@ -139,11 +140,13 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'mediafiles'
 
 CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
-        'LOCATION': '127.0.0.1:8088/shop/',
-        'LOCATION': '127.0.0.1:8088/user_items/',
-        'LOCATION': '127.0.0.1:8088/signup/',
-        'LOCATION': '127.0.0.1:8088/login/',
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://redis:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
     }
 }
+
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"

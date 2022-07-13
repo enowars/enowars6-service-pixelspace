@@ -43,6 +43,7 @@ You have {{user_bought|length}} bought objects:<br><br>
 {% for s in user_bought %}
 <td>Name: {{ s.item.name }}</td><br>
 <td><a id="bought-view--{{s.item.name}}" href="{{s.item.pk}}">View Item</a> <a id="bought-review-{{s.item.name}}" href="review/{{s.item.pk}}">Write a review</a></td><br>
+,
 {% endfor %}
 {% endif %}
 {% endblock %}

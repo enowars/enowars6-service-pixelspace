@@ -38,16 +38,14 @@ class Buyers(models.Model):
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    first_name = models.CharField(max_length=20)
-    last_name = models.CharField(max_length=20)
-    balance = models.IntegerField(validators=[MinValueValidator(0),MaxValueValidator(2147483647)])
+    balance = models.IntegerField(default=100,validators=[MinValueValidator(0),MaxValueValidator(2**60)])
     notes = models.CharField(max_length=50000,default="You can enter your notes here...")
     expiration_date = models.DateTimeField(blank=True,null=True)
 
 @receiver(post_save,sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
-        Profile.objects.create(user=instance,balance=100)
+        Profile.objects.create(user=instance,balance=100,expiration_date=timezone.now() + timedelta(minutes=11))
 
 @receiver(post_save, sender=User)
 def save_user_profile(sender,instance,**kwargs):

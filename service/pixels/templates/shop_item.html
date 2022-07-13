@@ -61,7 +61,7 @@
                         </tr>
                     </tbody>
                 </table>
-                {% if user.is_authenticated %}
+                {% if request.session.auth %}
                 <a class="btn btn-success" href ="../purchase/{{item.pk}}"> BUY for {{item.price}}</a>
                 {% else %}
                 <a class="btn btn-primary" href="{% url 'login' %}">Login</a><a class="btn btn-info"  href="{% url 'create_account' %}">Register</a>

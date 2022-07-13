@@ -10,7 +10,7 @@
 {# Display django.contrib.messages as Bootstrap alerts #}
 {% bootstrap_messages %}
 {% block content %}
-{% if user.is_authenticated %}
+{% if request.session.auth %}
 
 <form method="post" enctype="multipart/form-data">
     {% bootstrap_form form %}
