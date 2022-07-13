@@ -10,7 +10,6 @@
 {# Display django.contrib.messages as Bootstrap alerts #}
 {% bootstrap_messages %}
 
-<p>Crypt Key: {{user.profile.cryptographic_key}}</p>
 <p>Profile_id: {{user.profile.pk}}</p>
 {% if user_items %}
 You have {{user_items|length}} uploaded objects:<br><br>

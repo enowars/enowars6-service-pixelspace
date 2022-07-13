@@ -19,7 +19,7 @@ class ShopItemForm(forms.ModelForm):
         help_text="Enter the name of your item",
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Inser item name...',
+            'placeholder': 'Insert item name...',
         }))
 
     cert_license = forms.FileField(
@@ -66,15 +66,12 @@ class SignupForm(UserCreationForm):
         error_messages={'unique': _("A user with that username already exists.")},
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
-    cryptographic_key = forms.CharField(max_length=1000, help_text='Required. Inform a valid email address.',required=False,
-                             widget=(forms.TextInput(attrs={'class': 'form-control'})))
-
     def __init__(self,*args,**kwargs):
         super(SignupForm, self).__init__(*args,**kwargs)      
 
     class Meta:
         model = User
-        fields = ('username', 'first_name', 'last_name', 'email', 'password1', 'password2','cryptographic_key',)
+        fields = ('username', 'first_name', 'last_name', 'email', 'password1', 'password2')
 
 class NoteForm(forms.ModelForm):
     class Meta:
@@ -87,9 +84,13 @@ class GiftReceiveForm(forms.ModelForm):
         fields = ['code']
 
 class GiftCreationForm(forms.ModelForm):
+
     class Meta:
         model = Gift
-        fields = ['code','value']
+        fields = ['code','item']
+
+    
+
 
 class CommentForm(forms.ModelForm):
     class Meta:

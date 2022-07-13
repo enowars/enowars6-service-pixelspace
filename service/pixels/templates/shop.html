@@ -10,15 +10,39 @@
 {% if shop_items %}
 There are {{shop_items|length}} objects in the shop:
 <br>
-{% for k,s in shop_items.items %}
-    <td><h4>{{ s.item.item.name }} by {{s.item.item.user.username}}</h4></td><br>
-    <td><img src="{{ s.item.item.data.url }}"/></td><br>
-    <td>Price: {{ s.item.price }}</td><br>
-    <td>Description: {{ s.item.description }}</td><br>
-    <ts>Rating: {{ s.rating }} (avg. from {{ s.num_reviews }})</ts>
-    <td><a id="viewable-{{s.item.item.name}}" href="item/{{s.item.pk}}">View item</a></td><br>
-    <td>{{ s.item.sold }} sold</td><br>
+{% for s in shop_items %}
+   
+    <td><a id="viewable-s.item.pk" href="{%url 'itemPage' item_id=s.item.pk%}">View item</a></td><br>
     <br>
 {% endfor %}
+
+<center>
+<nav aria-label="...">
+    <ul class="pagination">
+        {% if prev == None %}
+        <li class="page-item disabled">
+            <a class="page-link" href="{% url 'shop' page_num=prev %}">Previous</a>
+        </li>
+        {% else %}
+        <li class="page-item active">
+            <a class="page-link" href="{% url 'shop' page_num=prev %}">Previous</a>
+        </li>
+        {% endif %}
+        <li class="page-item disabled">
+            <a class="page-link" href="{% url 'shop' page_num=current %}">{{current}}</a>
+        </li>
+        {% if next == None %}
+        <li class="page-item disabled">
+            <a class="page-link" href="{% url 'shop' page_num=current %}">Next</a>
+        </li>
+        {% else %}
+        <li class="page-item active">
+            <a class="page-link" href="{% url 'shop' page_num=next %}">Next</a>
+        </li>
+        {% endif %}
+           
+    </ul>
+</nav>
+</center>
 {% endif %}
 {% endblock %}

@@ -40,7 +40,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.postgres',
     'pixels',
-    'debug_permissions',
     'django_bootstrap5',
     'django_random_user_hash',
     'django_crontab',
@@ -73,8 +72,6 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                #'django.core.context_processors.request',
-                #'responsive.context_processors.device_info',
             ],
         },
     },
@@ -103,18 +100,9 @@ ENV_DB_PORT_TYPE = str(type(os.environ.get('TEST_DB_PORT')))
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
-#    {
-#        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-#    },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
     },
-#    {
-#        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-#    },
-#    {
-#        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-#    },
 ]
 
 PASSWORD_HASHERS = [
@@ -122,7 +110,7 @@ PASSWORD_HASHERS = [
 ]
 
 CRONJOBS = [
-    ('*/12 * * * *','pixels.cron.clean_up','>> /var/log/clean_up.log')
+    ('*/0,12,24,36,48 * * * *','pixels.cron.clean_up','>> /var/log/clean_up.log')
 ]
 
 # Internationalization

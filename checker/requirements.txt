@@ -1,6 +1,5 @@
 enochecker3
 pymongo
 requests
-django-random-user-hash==0.0.5
 python-string-utils
 essential-generators

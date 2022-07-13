@@ -8,7 +8,6 @@ import secrets
 import json
 import hashlib
 from files import license_from_template
-import django_random_user_hash.user as HashUser
 import string_utils
 from datetime import datetime
 
@@ -19,7 +18,27 @@ from errors import MisconfigurationError,Pixels_ShopItemError
 
 service_port = 8010
 
+email_providers = [
+    "gmail",
+    "outlook",
+    "gmx",
+    "web",
+    "protonmail",
+    "aol",
+    "zohomail",
+    "enowars",
+    ]
 
+email_endings = [
+    "de",
+    "com",
+    "uk",
+    "it",
+    "org",
+    "net",
+    "edu",
+    "gov"
+]
 
 def check_kwargs(func_name: str ,keys: list, kwargs,logger: LoggerAdapter): 
     for key in keys:
@@ -30,13 +49,13 @@ def check_kwargs(func_name: str ,keys: list, kwargs,logger: LoggerAdapter):
 
      
 async def register_user(client: AsyncClient, logger: LoggerAdapter,db: ChainDB,chain_id:int) -> dict:
+    global email_providers,email_endings
     t0 = datetime.now()
     username = secrets.token_hex(12)
     password = secrets.token_hex(12)
     first_name = secrets.token_hex(5)
     last_name = secrets.token_hex(5)
-    email = secrets.token_hex(8) + "@" + "enowars" +"." + "de"
-    key = hashlib.sha1(secrets.token_hex(5).encode('utf-8')).hexdigest()
+    email = secrets.token_hex(8) + "@" + email_providers[secrets.randbelow(8)] +"." + email_endings[secrets.randbelow(8)]
 
     data={
         "username": username,
@@ -45,8 +64,6 @@ async def register_user(client: AsyncClient, logger: LoggerAdapter,db: ChainDB,c
         "first_name": first_name,
         "last_name": last_name,
         "email": email,
-        "cryptographic_key": key,
-        "next/": "shop/",
     }
 
     headers={
@@ -54,6 +71,7 @@ async def register_user(client: AsyncClient, logger: LoggerAdapter,db: ChainDB,c
     }
     
     try:
+        logger.debug(f"REQUESTURL: {client.base_url} signup/")
         response = await client.post("signup/",data=data,headers=headers,follow_redirects=True)
     except RequestError:    
         logger.error(f"ERROR - REGISTER USER: Could not register USER {username} no response {json.dumps(data)}")
@@ -65,14 +83,15 @@ async def register_user(client: AsyncClient, logger: LoggerAdapter,db: ChainDB,c
 
     t1 = datetime.now()
     d1 = t1 - t0
-    logger.debug(f"Time - register_user (post) {d1.microseconds} microsecs")
+    logger.debug(f"Time - register_user (post) {d1.total_seconds()} s")
     logger.info(f"Registered USER {username}")
     
     if chain_id:
         await db.set("user",{'username':username,'password':password})
     t2 = datetime.now()
     d2 = t2 - t1
-    logger.debug(f"Time - register_user (DB_set) {d2.microseconds} microsecs")
+    logger.debug(f"Time - register_user (DB_set) {d2.total_seconds()} s")
+    logger.debug(f"REGISTER USER - Total time {(t2-t0).total_seconds()} s")
     return data
 
 async def login(client: AsyncClient, logger: LoggerAdapter, db: ChainDB,kwargs) -> None:
@@ -83,7 +102,7 @@ async def login(client: AsyncClient, logger: LoggerAdapter, db: ChainDB,kwargs) 
     data={
         "username": kwargs['username'],
         "password": kwargs['password'],
-        "next/": "shop/",
+        "next/": "shop/1/",
     }
 
     headers={
@@ -91,13 +110,15 @@ async def login(client: AsyncClient, logger: LoggerAdapter, db: ChainDB,kwargs) 
     }
 
     try:
+        logger.debug(f"REQUESTURL: {client.base_url} login/")
         response = await client.post('login/',data=data,headers=headers,follow_redirects=True)
     except RequestError:
         logger.error(f" Login - Cannot login as user: {kwargs['username']} pw: {kwargs['password']}")
         raise MumbleException(f"Error while loggin in with credentials\nusername: {kwargs['username']}\n{kwargs['password']}")
     t1 = datetime.now()
     d1 = t1 -t0
-    logger.debug(f"Time - login (post) {d1.microseconds} microsecs")
+    logger.debug(f"Time - login (post) {d1.total_seconds()} s")
+    logger.debug(f"LOGIN - Total time {(t1-t0).total_seconds()} s")
     assert_equals(response.status_code, 200,"Login failed")
 
 
@@ -108,22 +129,24 @@ async def create_ShopItem(client: AsyncClient, logger: LoggerAdapter, db: ChainD
     
 
     try:
+        logger.debug(f"REQUESTURL: {client.base_url} user_items/")
         response = await client.get('user_items/',follow_redirects=True)
     except RequestError as exc:
         raise MumbleException("Error while retrieving user items")
     t1 = datetime.now()
     d1 = t1 -t0
-    logger.debug(f"Time - create_ShopItem (get user_items) {d1.microseconds} microsecs")
+    logger.debug(f"Time - create_ShopItem (get user_items) {d1.total_seconds()} s")
     assert_equals(response.status_code, 200,"Getting User Items Failed!")
 
 
     try:
+        logger.debug(f"REQUESTURL: {client.base_url} new_item/")
         response = await client.get('new_item/',follow_redirects=True)
     except RequestError as exc:
         raise MumbleException("Error while retrieving item creation form")
     t2 = datetime.now()
     d2 = t2 -t1
-    logger.debug(f"Time - create_ShopItem (get new_item) {d2.microseconds} microsecs")
+    logger.debug(f"Time - create_ShopItem (get new_item) {d2.total_seconds()} s")
     assert_equals(response.status_code, 200,"Getting Item Form Failed!")
 
     data_type = 'image/' + kwargs['data_path'].split('.')[1]
@@ -148,16 +171,20 @@ async def create_ShopItem(client: AsyncClient, logger: LoggerAdapter, db: ChainD
     headers={"Referer": f"{client.base_url}/new_item/"}   
     t3 = datetime.now()
     d3 = t3 -t2
-    logger.debug(f"Time - create_ShopItem (data_processing) {d3.microseconds} microsecs")
+    logger.debug(f"Time - create_ShopItem (data_processing) {d3.total_seconds()} s")
     try:
+        logger.debug(f"REQUESTURL: {client.base_url} new_item/")
         response = await client.post('new_item/',data=data,files=files,headers=headers,follow_redirects=True)
     except RequestError:
         raise MumbleException("Error while submitting Shop Item")
     t4 = datetime.now()
     d4 = t4 -t3
-    logger.debug(f"Time - create_ShopItem (post new_item) {d4.microseconds} microsecs")
+    logger.debug(f"Time - create_ShopItem (post new_item) {d4.total_seconds()} s")
     assert_equals(response.status_code, 200, "Submitting Item Form Failed!")
-    return str(response.url).split("/")[4]
+    item_id = str(response.url).split("/")[4]
+    logger.warning(f"CREATE-ITEM - URL: {response.url} extracted ID: {item_id} int: {int(item_id)}")
+    logger.debug(f"CREATE-ITEM - Total time {(t4-t0).total_seconds()} s")
+    return int(item_id)
    
     
 
@@ -167,28 +194,29 @@ async def create_ShopListing(client: AsyncClient, logger: LoggerAdapter, db: Cha
     check_kwargs(func_name=create_ShopListing.__name__,keys=keys,kwargs=kwargs,logger=logger)
     item_id = kwargs['item_id']
     try:
+        logger.debug(f"REQUESTURL: {client.base_url} user_items/enlist/{item_id}")
         response = await client.get(f'user_items/enlist/{item_id}',follow_redirects=True)
     except RequestError:
         raise MumbleException("Error while requesting endpoint user_items")
     t1 = datetime.now()
     d1 = t1 -t0
-    logger.debug(f"Time - create_ShopListing (get user_items) {d1.microseconds} microsecs")
+    logger.debug(f"Time - create_ShopListing (get user_items) {d1.total_seconds()} s")
 
     t2 = datetime.now()
     d2 = t2 -t1
-    logger.debug(f"Time - create_ShopListing (finding item_id) {d2.microseconds} microsecs")
+    logger.debug(f"Time - create_ShopListing (finding item_id) {d2.total_seconds()} s")
     data = {
         'price': kwargs['item_price'],
         'description': kwargs['description'],
-        'next': 'shop/',
     }
     try:
+        logger.debug(f"REQUESTURL: {client.base_url} user_items/enlist/{item_id}")
         response = await client.post(f'user_items/enlist/{item_id}',data=data)
     except:
         raise RequestError('Error while submitting Shop Listing!')
     t3 = datetime.now()
     d3 = t3 -t2
-    logger.debug(f"Time - create_ShopListing (post enlist) {d3.microseconds} microsecs")
+    logger.debug(f"Time - create_ShopListing (post enlist) {d3.total_seconds()} s")
     assert_equals(response.status_code,302,"CREATE - Shop Listing Form Failed!")
     return str(response.url).split("/")[5]
 
@@ -198,29 +226,33 @@ async def create_note(client: AsyncClient, logger: Logger, db: ChainDB,kwargs) -
     check_kwargs(func_name=create_note.__name__,keys=keys,kwargs=kwargs,logger=logger)
 
     try:
+        logger.debug(f"REQUESTURL: {client.base_url} notes/")
         response = await client.get('notes/',follow_redirects=True)
     except RequestError:
         raise MumbleException("Error while requesting endpoint notes")    
     t1 = datetime.now()
     d1 = t1 -t0
-    logger.debug(f"Time - create_note (get notes) {d1.microseconds} microsecs")
+    logger.debug(f"Time - create_note (get notes) {d1.total_seconds()} s")
     data = {
         'notes': kwargs['note'],
     }
 
     try:
+        logger.debug(f"REQUESTURL: {client.base_url} notes/")
         response = await client.post('notes/',data=data,follow_redirects=True)
     except RequestError:
         raise MumbleException("Error while submitting notes!")
     t2 = datetime.now()
     d2 = t2 -t1
-    logger.debug(f"Time - create_note (post notes) {d2.microseconds} microsecs")
+    logger.debug(f"Time - create_note (post notes) {d2.total_seconds()} s")
+    logger.debug(f"CREATE LISTING - Total time {(t2-t0).total_seconds()} s")
 
 async def logout_user(client: AsyncClient,logger: Logger, db:ChainDB, kwargs) -> None:
     keys = ['logged_in']
     check_kwargs(func_name=logout_user.__name__,keys=keys,kwargs=kwargs,logger=logger)
 
     try:
+        logger.debug(f"REQUESTURL: {client.base_url} logout/")
         response = await client.get('logout/',follow_redirects=True)
     except RequestError as exc:
         raise MumbleException("ERROR - logging out user")
@@ -238,7 +270,7 @@ def exploitable_item_name(min_length:int) -> str:
     index = secrets.randbelow(len(item_name))
     exploit = exploitable_names[secrets.randbelow(len(exploitable_names))]
     return (item_name[:index] + exploit + item_name[index:]).upper()
-
+"""
 async def make_item_name_exploitable(item_name:str) -> str:
     exploits = {
         'ss': 223,
@@ -310,8 +342,7 @@ async def create_staff_user(client: AsyncClient, logger: Logger,db: ChainDB,kwar
         "first_name": user.first,
         "last_name": user.last,
         "email": user.email,
-        "cryptographic_key": user.gen_sha1(level=2,salt=kwargs['salt']),
-        "next/": "shop/",
+        "next/": "shop/1/",
     }
 
     headers={
@@ -326,4 +357,4 @@ async def create_staff_user(client: AsyncClient, logger: Logger,db: ChainDB,kwar
     assert_equals(response.status_code, 200, "Registration failed")
     #await db.set(kwargs['chain_id']+"_user",{'username':user.username,'password':user.password1})
     return data
-    
+"""

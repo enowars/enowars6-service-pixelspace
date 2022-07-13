@@ -14,8 +14,8 @@ from django.utils import timezone
 class ShopItem(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     name = models.CharField(max_length=100,db_index=True)
-    cert_license = ContentTypeRestrictedFileField(upload_to='uploads/licenses/',content_types=['text/plain'],max_upload_size=5000,blank=True,null=True)
-    data = ContentTypeRestrictedFileField(upload_to='uploads/image_data/',content_types=['image/jpg','image/jpeg','image/bmp','image/tga','image/png'],max_upload_size=5000,blank=True,null=True)
+    cert_license = ContentTypeRestrictedFileField(upload_to='uploads/licenses/',content_types=['text/plain'],max_upload_size=1000,blank=True,null=True)
+    data = ContentTypeRestrictedFileField(upload_to='uploads/image_data/',content_types=['image/jpg','image/jpeg','image/bmp','image/tga','image/png'],max_upload_size=1000,blank=True,null=True)
 
 
 class ShopListing(models.Model):
@@ -41,7 +41,6 @@ class Profile(models.Model):
     first_name = models.CharField(max_length=20)
     last_name = models.CharField(max_length=20)
     balance = models.IntegerField(validators=[MinValueValidator(0),MaxValueValidator(2147483647)])
-    cryptographic_key = models.CharField(max_length=1000,default="None")
     notes = models.CharField(max_length=50000,default="You can enter your notes here...")
     expiration_date = models.DateTimeField(blank=True,null=True)
 
@@ -57,6 +56,6 @@ def save_user_profile(sender,instance,**kwargs):
 
 
 class Gift(models.Model):
-    code = models.CharField(max_length=20)
-    value = models.CharField(max_length=100)
-    users = models.ForeignKey(Buyers, on_delete=models.CASCADE,blank=True,null=True,name="Receivers",related_name="Receivers")
+    code = models.CharField(max_length=50)
+    item = models.ForeignKey(ShopItem, on_delete=models.CASCADE,related_name="gift_item")
+    users = models.ForeignKey(Buyers, on_delete=models.CASCADE,blank=True,null=True,db_index=True,related_name="Receivers")

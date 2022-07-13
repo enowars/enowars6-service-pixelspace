@@ -7,7 +7,7 @@ services:
     build: 
       context: .
       dockerfile: Dockerfile
-    command: gunicorn pixelspace.wsgi:application --bind 0.0.0.0:8088
+    command: gunicorn --workers=4 --threads=4 pixelspace.wsgi:application --bind 0.0.0.0:8088
     volumes:
       - media_volume:/mediafiles
       - static_volume:/staticfiles

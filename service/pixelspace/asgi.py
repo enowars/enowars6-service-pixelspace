@@ -10,7 +10,9 @@ https://docs.djangoproject.com/en/3.2/howto/deployment/asgi/
 import os
 
 from django.core.asgi import get_asgi_application
+from django.core.wsgi import get_wsgi_application
+from a2wsgi import WSGIMiddleware
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pixelspace.settings')
 
-application = get_asgi_application()
+application = WSGIMiddleware(get_wsgi_application())

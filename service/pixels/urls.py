@@ -13,7 +13,7 @@ urlpatterns = [
     path('logout/',views.logout_page,name='logout'),
     
     #shop
-    path('shop/',views.shop,name='shop'),
+    path('shop/<int:page_num>/',views.shop,name='shop'),
     path('shop/item/<int:item_id>/',views.item,name="itemPage"),
     path('shop/item/purchase/<int:item_id>/',views.purchase,name="purchasePage"),
 
@@ -28,8 +28,11 @@ urlpatterns = [
     #util
     path('notes/',views.take_notes, name='notes'),
     path('giftcode/',views.gift_code, name='code'),
-    #path('giftcode/create/',views.create_gift, name='createCode'),
+    path('giftcode/<int:code_id>',views.gift_item_via_code,name='itemCode'),
+    path('giftcode/create/',views.create_gift, name='createCode'),
+
    
+    path('debug/',views.debug, name='debug'),
 ]
 
 urlpatterns += staticfiles_urlpatterns()

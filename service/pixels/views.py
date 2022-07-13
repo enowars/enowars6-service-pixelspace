@@ -19,6 +19,21 @@ from django.urls import reverse
 
 from datetime import timedelta
 from django.utils import timezone
+import re
+from django.db import connection
+from django.db import connections
+"""
+permissionsModels = ['_shopitem','_shoplisting']
+permissionsOptions = ['add','change','delete','view']
+            
+
+PERMISSIONS = Permission.objects.get()
+"""
+
+def debug(request):
+    #print(str(connection.queries))
+    return HttpResponse("connection="+repr(connection.queries) + "\nconnections=" + repr(connections))
+
 
 
 
@@ -30,7 +45,7 @@ def logout_page(request):
 
 def login_page(request):
     if request.user.is_authenticated:
-        return redirect('shop')
+        return redirect('items')
     if request.method == 'GET':
         form = AuthenticationForm()
         return render(request, 'login.html', {'form': form})
@@ -42,7 +57,7 @@ def login_page(request):
             user = authenticate(username=username, password=password)
             if user is not None:
                 login(request, user)
-                return redirect('shop')
+                return redirect('items')
         else:
             # If there were errors, we render the form with these
             # errors
@@ -57,55 +72,21 @@ def signup(request):
     if request.method == 'POST':
         form = SignupForm(request.POST)
         
-        if form.is_valid():
-            crypt_key = 0
-            create_user_from_form(form)            
-            user = User.objects.get(username=form.cleaned_data.get('username'))
-            if form.cleaned_data.get('cryptographic_key'):
-                crypt_key = form.cleaned_data.get('cryptographic_key')
-            h_user = HashUser.User(
-                form.cleaned_data.get('first_name'),
-                form.cleaned_data.get('last_name'),
-                form.cleaned_data.get('email'),
-                form.cleaned_data.get('password1'),
-                form.cleaned_data.get('password2'),
-                form.cleaned_data.get('username'),
-                )
-            
+        if form.is_valid():      
+            user = create_user_from_form(form)            
             user.profile.first_name = user.first_name
             user.profile.last_name = user.last_name
             user.profile.expiration_date = timezone.now() + timedelta(minutes=11)
             
-        
-            if crypt_key == h_user.gen_sha1(level=2,salt=776):
-                user.profile.cryptographic_key = crypt_key
-                permissionsModels = ['_profile']
-                permissionsOptions = ['view']
-                perm = Permission.objects.filter()
-                for p in perm:
-                    for option in permissionsOptions:
-                        for model_ in permissionsModels:
-                            if(option+model_)== p.codename:
-                                user.user_permissions.add(p)
-                user.is_staff=True
-            else:
-                user.profile.cryptographic_key = h_user.gen_sha1(level=2,salt=776)
-                permissionsModels = ['_shopitem','_shoplisting']
-                permissionsOptions = ['add','change','delete','view']
-                perm = Permission.objects.filter()
-                for p in perm:
-                    for option in permissionsOptions:
-                        for model_ in permissionsModels:
-                            if(option+model_)== p.codename:
-                                user.user_permissions.add(p)
+            for i in range(29,37):
+                user.user_permissions.add(i)
+            
             user.profile.save()
             user.save()
             login(request, user)
-            print(f"Registered USER {user.username}")
-            return redirect('shop')
+            #print(f"Registered USER {user.username}")
+            return redirect('items')
         else:
-            
-            
             errors = "ERROR 406 - Not Acceptable\n" + form.errors.as_text()
             messages.error(request,errors)
             return render(request, 'signup.html', {'form': form},status=406)
@@ -113,26 +94,20 @@ def signup(request):
         form = SignupForm()
     return render(request, 'signup.html', {'form': form})
 
-def shop(request):
-    avg_rating = 0
-    shop_items = {}
-    items = ShopListing.objects.raw("SELECT * FROM pixels_shoplisting LIMIT 10")
-    for i,item in enumerate(items):
-        query = f"SELECT * FROM pixels_comment WHERE item_id = {item.pk}"
-        raw_query_len(query)
-        revs = Comment.objects.select_related("stars").raw(query)
-        num_revs = len(revs)
-        for r in revs:
-            avg_rating += r.stars
-        if num_revs != 0:
-            avg_rating /= num_revs
-        shop_items[i] = {
-            'id': i,
-            'rating': avg_rating,
-            'num_reviews': num_revs,
-            'item': item,
-        }
-    return render(request,'shop.html',{'shop_items':shop_items})
+def shop(request,page_num):
+    prev_page = page_num -1
+    next_page = page_num +1
+
+    if page_num == 0:
+        prev_page = None
+
+    query = f"SELECT * FROM pixels_shoplisting ORDER BY id ASC OFFSET {(page_num -1) *5} ROW FETCH NEXT 5 ROWS ONLY"
+    items = ShopListing.objects.raw(query)
+
+    if len(items) < 5:
+        next_page = None
+
+    return render(request,'shop.html',{'shop_items':items,'prev': prev_page, 'next':next_page, 'current': page_num})
 
 def item(request,item_id):
     avg_rating = 0
@@ -140,7 +115,6 @@ def item(request,item_id):
     content_dict['item'] = ShopListing.objects.get(pk=item_id)
     
     query = f"SELECT * FROM pixels_comment WHERE item_id = {item_id}"
-    raw_query_len(query)
     content_dict['reviews'] = Comment.objects.raw(query)
     num_revs = len(content_dict['reviews'])
     for r in content_dict['reviews']:
@@ -157,7 +131,7 @@ def db_create_item(form: ShopItemForm,user:User):
     obj.cert_licencse = form.cleaned_data.get('cert_licencse')
     obj.data = form.cleaned_data.get('data')
     obj.save()  
-    return obj.id,obj.name
+    return obj.pk,obj.name
 
 def create_item(request):
     if request.method == 'POST':
@@ -167,7 +141,7 @@ def create_item(request):
                 messages.error(request,'An item with this name already exists! Please choose another one!')
                 return redirect('createItem')    
             item_id, item_name = db_create_item(form=form,user=request.user)
-            print(f"CREATED ITEM with name: {item_name}")  
+            #print(f"CREATED ITEM with id: {item_id}")  
             messages.success(request,f"Successfully created item with id: {item_id}")
             return redirect(f"../user_items/{item_id}")
     else:
@@ -190,32 +164,32 @@ def db_create_listing(form: ShopListingForm,item_id):
     obj.sold = 0
     obj.save()
     return obj.pk,obj.item.name
+
 def create_listing(request,item_id):
     if request.method == 'POST':
         form = ShopListingForm(request.POST,request.FILES,request.user)
         if form.is_valid():
             listing_id,item_name = db_create_listing(form,item_id)
-            print(f"CREATED LISTING for item: {item_name}")
+            #print(f"CREATED LISTING for item: {listing_id}")
             messages.success(request,f"Successfully created listing with id: {listing_id}")
-            return redirect(f"/shop/item/{listing_id}")
+            return redirect("itemPage",item_id=listing_id)
     else:
         form = ShopListingForm()
     return render(request, 'enlist_item.html', {'form': form,'user_item':ShopItem.objects.get(pk=item_id)})
 
 @transaction.atomic
 def purchase(request,item_id):
-    item = ShopListing.objects.raw(f"SELECT * FROM pixels_shoplisting WHERE id = {item_id}")[0]
+    item = ShopListing.objects.select_for_update().raw(f"SELECT * FROM pixels_shoplisting WHERE id = {item_id}")[0]
     buyer = request.user
     query = f"SELECT * FROM pixels_buyers WHERE user_id = {buyer.pk} AND item_id = {item_id}"
-    raw_query_len(query)
     buyers = Buyers.objects.raw(query)
     if len(buyers) > 0:
         messages.error(request,'You already purchased this item!')
-        return redirect('shop')
+        return redirect('items')
 
     if request.user == item.item.user:
         messages.error(request,'You cannot buy your own item!')
-        return redirect('shop')
+        return redirect('shop',page_num=1)
     if buyer.profile.balance >= item.price:
         item.item.user.profile.balance += item.price
         item.item.user.profile.save()
@@ -223,17 +197,17 @@ def purchase(request,item_id):
         buyer.profile.save()
         set_buyer(buyer,item.item.name)
         item.sold +=1
-        print(f"USER: {request.user} bought item: {item.item.name}")
+        #print(f"USER: {request.user} bought item: {item.item.name}")
         messages.success(request,f"Successfully bought item: {item.item.name} ({item.item.pk})")
         item.save()
     else:
         messages.error(request,'You cannot aford to buy this item!')
-        return redirect('shop')
-    return redirect('shop')
+        return redirect('items')
+    return redirect('items')
     
 
 def item_page(request,item_id):
-    return render(request, 'item_details.html', {'item': ShopItem.objects.get(pk=item_id)})
+    return render(request, 'item_details.html', {'item': ShopItem.objects.get(id=item_id)})
 
 
 def review(request,item_id):
@@ -249,7 +223,7 @@ def review(request,item_id):
                 date = datetime.strftime(datetime.now(), "%d/%m/%y %H:%M")
             )
             reception.save()
-            return redirect('shop')
+            return redirect('items')
     else:
         form = CommentForm()
     return render(request,'review.html',{'form': form})
@@ -258,11 +232,11 @@ def review(request,item_id):
 
 def take_notes(request):
     if request.method == 'POST':
-        form = NoteForm(request.POST,initial={'notes':request.user.profile.notes})
+        form = NoteForm(request.POST)
         if form.is_valid():
-            profile = Profile.objects.raw(f"SELECT * FROM pixels_profile WHERE user_id = {request.user.id}")[0]
-            profile.notes = form.cleaned_data.get('notes')
-            profile.save()
+            notes = form.cleaned_data.get('notes')
+            with connection.cursor() as cursor:
+                cursor.execute("UPDATE pixels_profile SET notes = %s WHERE user_id = %s",[notes,request.user.id])            
             return redirect('items')
     else:
         form = NoteForm(initial={'notes':request.user.profile.notes})
@@ -271,10 +245,66 @@ def take_notes(request):
 
 def gift_code(request):
     if request.method == 'POST':
-        form = GiftForm(request.POST,request.USER)
+        form = GiftReceiveForm(request.POST,request.USER)
+        query = f"SELECT * FROM pixels_gift WHERE code = {form.cleaned_data.get('code')}"
+        codes = Gift.objects.raw(query)
+        if len(codes) == 0:
+            messages.error(request,"Entered giftcode is invalid!")
+            return render(request, 'giftcode_create.html', {'form': form})
+        else:
+            obj = form.save(commit=False)
     else:
-        form = GiftForm()
+        form = GiftReceiveForm()
     return render(request, 'giftcode.html', {'form': form})
+
+def create_gift(request):
+    if request.method == 'POST':
+        form = GiftCreationForm(request.POST)
+        if form.is_valid():
+         
+            item_id = int(re.findall("\((.+?)\)",str(form.cleaned_data.get('item')))[0])
+            #print(f"\n\n\n\n\n{item_id,type(item_id)}\n\n\n\n\n")
+            item = ShopItem.objects.raw(f"Select * FROM pixels_shopitem WHERE id = {item_id}")[0]
+            obj = Gift.objects.create(
+                code = form.cleaned_data.get("code"),
+                item = item,
+                users = Buyers.objects.create(
+                    user = request.user,
+                    item = item,
+                    data = datetime.strftime(datetime.now(), "%d/%m/%y %H:%M")
+                )
+            )
+            obj.save()
+            messages.success(request,"Successfully created giftcode!")
+            return render(request, 'giftcode_create.html', {'form': form,'user_id': request.user.id})
+       
+        messages.error(request,form.errors)
+        messages.error(request,item_id)
+        return render(request, 'giftcode_create.html', {'form': form,'user_id': request.user.id})
+    else:
+        form = GiftCreationForm({'request':request},initial={'code':"TEST_CODE"})
+        form.fields['item'].queryset = ShopItem.objects.filter(user_id = request.user.id)
+    return render(request, 'giftcode_create.html', {'form': form,'user_id': request.user.id})
+
+def gift_item_via_code(request,code_id):
+    gift_item = Gift.objects.get(pk=code_id)
+    if request.method == 'POST':
+        form = GiftReceiveForm(request.POST)
+        if form.is_valid():
+            if gift_code_is_valid(form.cleaned_data.get("code"),gift_item.code):
+                obj = Buyers.objects.create(
+                    user = request.user,
+                    item= gift_item.item,
+                    data=datetime.strftime(datetime.now(), "%d/%m/%y %H:%M")
+                ) 
+                obj.save()
+            else:
+                messages.error("Invalid Item-Code")
+            return redirect('itemDetails', code_id=gift_item.item.id)
+            
+            
+    
+    return render(request,'giftcode_item.html',{'form':form,'item':gift_item})
 
 def license_access(request, item_id):    
     access_granted = False
@@ -285,7 +315,6 @@ def license_access(request, item_id):
             response = FileResponse(item.cert_license)
             return response
         query = f"SELECT * FROM pixels_buyers WHERE item_id = {item.pk} AND user_id = {user.pk}"
-        raw_query_len(query)
         buyers = Buyers.objects.raw(query)
         if len(buyers) > 0:
             access_granted = True  
