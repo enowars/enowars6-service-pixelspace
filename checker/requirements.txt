@@ -4,3 +4,4 @@ requests
 python-string-utils
 essential-generators
 enochecker_test
+bs4

