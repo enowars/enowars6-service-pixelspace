@@ -13,7 +13,7 @@ from django.utils import timezone
 
 class ShopItem(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    name = models.CharField(max_length=100,db_index=True)
+    name = models.CharField(max_length=50,db_index=True)
     cert_license = ContentTypeRestrictedFileField(upload_to='uploads/licenses/',content_types=['text/plain'],max_upload_size=1000,blank=True,null=True)
     data = ContentTypeRestrictedFileField(upload_to='uploads/image_data/',content_types=['image/jpg','image/jpeg','image/bmp','image/tga','image/png'],max_upload_size=1000,blank=True,null=True)
 
@@ -33,7 +33,7 @@ class Comment(models.Model):
 
 class Buyers(models.Model):
     user = models.ForeignKey(User,on_delete=models.CASCADE,db_index=True,related_name="buyer_user")
-    item = models.ForeignKey(ShopItem,on_delete=models.DO_NOTHING,db_index=True,related_name="buyer_item")
+    item = models.ForeignKey(ShopItem,on_delete=models.CASCADE,db_index=True,related_name="buyer_item")
     data = models.CharField(max_length=100)
 
 class Profile(models.Model):
@@ -52,3 +52,8 @@ def save_user_profile(sender,instance,**kwargs):
     instance.profile.save()
 
 
+
+class Gift(models.Model):
+    code = models.CharField(max_length=50)
+    item = models.ForeignKey(ShopItem, on_delete=models.CASCADE,related_name="gift_item")
+    users = models.ForeignKey(Buyers, on_delete=models.CASCADE,blank=True,null=True,db_index=True,related_name="Receivers")
