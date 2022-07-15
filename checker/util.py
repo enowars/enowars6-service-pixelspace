@@ -41,11 +41,12 @@ email_endings = [
 ]
 
 def check_kwargs(func_name: str ,keys: list, kwargs,logger: LoggerAdapter): 
+    logger.debug(f"{func_name.upper()} - KWARG-CONFIG : {kwargs}")
     for key in keys:
         if not kwargs[key]:
             logger.critical(f" {func_name} - Missing KEY {key}! ")
             raise MisconfigurationError(f"FUNC: {func_name} - Kwargs has no key <{key}> !")
-            return
+        
 
      
 async def register_user(client: AsyncClient, logger: LoggerAdapter,db: ChainDB,chain_id:int) -> dict:
@@ -182,7 +183,7 @@ async def create_ShopItem(client: AsyncClient, logger: LoggerAdapter, db: ChainD
     logger.debug(f"Time - create_ShopItem (post new_item) {d4.total_seconds()} s")
     assert_equals(response.status_code, 200, "Submitting Item Form Failed!")
     item_id = str(response.url).split("/")[4]
-    logger.warning(f"CREATE-ITEM - URL: {response.url} extracted ID: {item_id} int: {int(item_id)}")
+    logger.debug(f"CREATE-ITEM - URL: {response.url} extracted ID: {item_id} int: {int(item_id)}")
     logger.debug(f"CREATE-ITEM - Total time {(t4-t0).total_seconds()} s")
     return int(item_id)
    
@@ -194,8 +195,8 @@ async def create_ShopListing(client: AsyncClient, logger: LoggerAdapter, db: Cha
     check_kwargs(func_name=create_ShopListing.__name__,keys=keys,kwargs=kwargs,logger=logger)
     item_id = kwargs['item_id']
     try:
-        logger.debug(f"REQUESTURL: {client.base_url} user_items/enlist/{item_id}")
-        response = await client.get(f'user_items/enlist/{item_id}',follow_redirects=True)
+        logger.debug(f"REQUESTURL: {client.base_url} user_items/enlist/{item_id}/")
+        response = await client.get(f'user_items/enlist/{item_id}/',follow_redirects=True)
     except RequestError:
         raise MumbleException("Error while requesting endpoint user_items")
     t1 = datetime.now()
@@ -210,15 +211,18 @@ async def create_ShopListing(client: AsyncClient, logger: LoggerAdapter, db: Cha
         'description': kwargs['description'],
     }
     try:
-        logger.debug(f"REQUESTURL: {client.base_url} user_items/enlist/{item_id}")
-        response = await client.post(f'user_items/enlist/{item_id}',data=data)
+        logger.debug(f"REQUESTURL: {client.base_url} user_items/enlist/{item_id}/")
+        response = await client.post(f'user_items/enlist/{item_id}/',data=data,follow_redirects=True)
     except:
         raise RequestError('Error while submitting Shop Listing!')
     t3 = datetime.now()
     d3 = t3 -t2
+    logger.debug(f"CREATE_SHOPLISITING - POST STATUS_CODE: {response.status_code}")
     logger.debug(f"Time - create_ShopListing (post enlist) {d3.total_seconds()} s")
-    assert_equals(response.status_code,302,"CREATE - Shop Listing Form Failed!")
-    return str(response.url).split("/")[5]
+    assert_equals(response.status_code,200,"CREATE - Shop Listing Form Failed!")
+    listing_id = str(response.url).split("/")[5]
+    logger.debug(f"CREATE_SHOPLISTING -  created listing with ID: {listing_id} for Item with ID: {item_id}")
+    return listing_id
 
 async def create_note(client: AsyncClient, logger: Logger, db: ChainDB,kwargs) -> None:
     t0 = datetime.now()
