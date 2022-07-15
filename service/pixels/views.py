@@ -20,17 +20,8 @@ from datetime import timedelta
 from django.utils import timezone
 import re
 from django.db import connection
-from django.db import connections
-"""
-permissionsModels = ['_shopitem','_shoplisting']
-permissionsOptions = ['add','change','delete','view']
-            
 
-PERMISSIONS = Permission.objects.get()
-"""
 
-def debug(request):
-    return render(request,'debug.html')
 
 def logout_page(request):
     logout(request)
@@ -241,71 +232,7 @@ def take_notes(request):
     else:
         form = NoteForm(initial={'notes':request.user.profile.notes})
     return render(request, 'notes.html', {'form': form})
-    
-
-def gift_code(request):
-    if request.method == 'POST':
-        form = GiftReceiveForm(request.POST,request.USER)
-        query = f"SELECT * FROM pixels_gift WHERE code = {form.cleaned_data.get('code')}"
-        codes = Gift.objects.raw(query)
-        if len(codes) == 0:
-            messages.error(request,"Entered giftcode is invalid!")
-            return render(request, 'giftcode_create.html', {'form': form})
-        else:
-            obj = form.save(commit=False)
-    else:
-        form = GiftReceiveForm()
-    return render(request, 'giftcode.html', {'form': form})
-
-def create_gift(request):
-    if request.method == 'POST':
-        form = GiftCreationForm(request.POST)
-        if form.is_valid():
-         
-            item_id = int(re.findall("\((.+?)\)",str(form.cleaned_data.get('item')))[0])
-            #print(f"\n\n\n\n\n{item_id,type(item_id)}\n\n\n\n\n")
-            item = ShopItem.objects.raw(f"Select * FROM pixels_shopitem WHERE id = {item_id}")[0]
-            obj = Gift.objects.create(
-                code = form.cleaned_data.get("code"),
-                item = item,
-                users = Buyers.objects.create(
-                    user = request.user,
-                    item = item,
-                    data = datetime.strftime(datetime.now(), "%d/%m/%y %H:%M")
-                )
-            )
-            obj.save()
-            messages.success(request,"Successfully created giftcode!")
-            return render(request, 'giftcode_create.html', {'form': form,'user_id': request.user.id})
-       
-        messages.error(request,form.errors)
-        messages.error(request,item_id)
-        return render(request, 'giftcode_create.html', {'form': form,'user_id': request.user.id})
-    else:
-        form = GiftCreationForm({'request':request},initial={'code':"TEST_CODE"})
-        form.fields['item'].queryset = ShopItem.objects.filter(user_id = request.user.id)
-    return render(request, 'giftcode_create.html', {'form': form,'user_id': request.user.id})
-
-def gift_item_via_code(request,code_id):
-    gift_item = Gift.objects.get(pk=code_id)
-    if request.method == 'POST':
-        form = GiftReceiveForm(request.POST)
-        if form.is_valid():
-            if gift_code_is_valid(form.cleaned_data.get("code"),gift_item.code):
-                obj = Buyers.objects.create(
-                    user = request.user,
-                    item= gift_item.item,
-                    data=datetime.strftime(datetime.now(), "%d/%m/%y %H:%M")
-                ) 
-                obj.save()
-            else:
-                messages.error("Invalid Item-Code")
-            return redirect('itemDetails', code_id=gift_item.item.id)
-            
-            
-    
-    return render(request,'giftcode_item.html',{'form':form,'item':gift_item})
-
+   
 def license_access(request, item_id):    
     access_granted = False
     user = request.user

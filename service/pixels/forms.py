@@ -1,7 +1,7 @@
 from distutils.command.build_scripts import first_line_re
 from xml.etree.ElementTree import Comment
 from django import forms
-from pixels.models import ShopListing, ShopItem, Profile, Gift, Comment
+from pixels.models import ShopListing, ShopItem, Profile, Comment
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import password_validation
@@ -77,17 +77,6 @@ class NoteForm(forms.ModelForm):
     class Meta:
         model = Profile
         fields = ['notes']
-
-class GiftReceiveForm(forms.ModelForm):
-    class Meta:
-        model = Gift
-        fields = ['code']
-
-class GiftCreationForm(forms.ModelForm):
-
-    class Meta:
-        model = Gift
-        fields = ['code','item']
 
     
 

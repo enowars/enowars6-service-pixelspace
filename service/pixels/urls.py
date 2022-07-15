@@ -27,12 +27,6 @@ urlpatterns = [
 
     #util
     path('notes/',views.take_notes, name='notes'),
-    path('giftcode/',views.gift_code, name='code'),
-    path('giftcode/<int:code_id>',views.gift_item_via_code,name='itemCode'),
-    path('giftcode/create/',views.create_gift, name='createCode'),
-
-   
-    path('debug/',views.debug, name='debug'),
 ]
 
 urlpatterns += staticfiles_urlpatterns()
