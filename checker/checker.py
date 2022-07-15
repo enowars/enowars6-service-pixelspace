@@ -320,7 +320,6 @@ async def exploit_license(task: ExploitCheckerTaskMessage, searcher: FlagSearche
 
 
     user2 = await register_user(client=client,logger=logger,db=None,chain_id=None)
-    #http://localhost:8010/shop/item/purchase/8543
     try:
         response = await client.get(f"shop/item/purchase/{listing_id}/",follow_redirects=True)
     except RequestError:
@@ -333,7 +332,6 @@ async def exploit_license(task: ExploitCheckerTaskMessage, searcher: FlagSearche
     
     data = BeautifulSoup(response,'html.parser')
     real_item_link = data.find_all('a')
-    #logger.debug(f"EXPLOIT_LICENSE - links: {real_item_link}")
     correct_link = ""
     for r_link in real_item_link:
       if item_name in str(r_link):

@@ -182,10 +182,14 @@ async def create_ShopItem(client: AsyncClient, logger: LoggerAdapter, db: ChainD
     d4 = t4 -t3
     logger.debug(f"Time - create_ShopItem (post new_item) {d4.total_seconds()} s")
     assert_equals(response.status_code, 200, "Submitting Item Form Failed!")
-    item_id = str(response.url).split("/")[4]
-    logger.debug(f"CREATE-ITEM - URL: {response.url} extracted ID: {item_id} int: {int(item_id)}")
+    try:
+        item_id = int(str(response.url).split("/")[4])
+        logger.debug(f"CREATE-ITEM - URL: {response.url} extracted ID: {item_id}")
+    except:
+        logger.error(f"CREATE-ITEM - ERROR could not extract item_id from URL: {response.url}")
+        raise MumbleException(f"CREATE_ITEM - Could not get item_id!")
     logger.debug(f"CREATE-ITEM - Total time {(t4-t0).total_seconds()} s")
-    return int(item_id)
+    return item_id
    
     
 
