@@ -262,7 +262,7 @@ async def logout_user(client: AsyncClient,logger: Logger, db:ChainDB, kwargs) ->
 def exploitable_item_name(min_length:int) -> str: 
 
     exploitable_names = ['ss','s','i','SS','S','I']
-    item_name = ''.join(secrets.choice(string.ascii_letters) for i in range(random.randint(min_length,100)))
+    item_name = ''.join(secrets.choice(string.ascii_letters) for i in range(random.randint(min_length,50)))
 
     if any(sub in item_name for sub in exploitable_names):
         return item_name
@@ -270,7 +270,7 @@ def exploitable_item_name(min_length:int) -> str:
     index = secrets.randbelow(len(item_name))
     exploit = exploitable_names[secrets.randbelow(len(exploitable_names))]
     return (item_name[:index] + exploit + item_name[index:]).upper()
-"""
+
 async def make_item_name_exploitable(item_name:str) -> str:
     exploits = {
         'ss': 223,
@@ -287,74 +287,3 @@ async def make_item_name_exploitable(item_name:str) -> str:
             res = item_name[0:index] + chr(exploits[key]) + item_name[index+len(key):]
             break
     return res
-
-def adjust_pw(offset:int,pw:str) -> str:
-    min_size = 33
-    max_size = 126
-    while offset != 0:
-        if offset < max_size:
-            max_size= offset
-        rint = random.randint(min_size,max_size)
-        if offset - rint < min_size:
-            rint = offset
-        pw += chr(rint)
-        offset -= rint
-    return pw
-
-
-async def create_staff_user(client: AsyncClient, logger: Logger,db: ChainDB,kwargs) -> None:
-    known_good = [
-        9260, 20640, 48143, 114881, 189663, 208534, 261981, 293375, 304144, 329994, 347885,
-        449225, 497661, 556423, 608984, 630902, 696892, 741704, 859564, 868048, 936481]
-    keys = ['data','key','salt']
-    check_kwargs(func_name=create_staff_user.__name__,keys=keys,kwargs=kwargs,logger=logger)
-    data = kwargs['data']
-    user = HashUser.User(
-        f= data['first_name'],
-        l= data['last_name'],
-        e=data['email'],
-        p1=data['password1'],
-        p2=data['password2'],
-        u=string_utils.shuffle(data['username']),
-    )
-
-    seed = user.gen_seed_value(salt=kwargs['salt'])
-    offset = -1
-    for k in known_good:
-        if k-seed > 0:
-
-            offset = k-seed
-            if offset >= 0:
-                break
-    if offset % 2 != 0:
-        alphabet = string.ascii_letters + string.digits
-        for i,c in enumerate(user.username):
-            if chr(ord(c)+1) in alphabet:
-                user.username = '%s%s%s' %(user.username[:i],chr(ord(c)+1),user.username[i+1:])
-
-    user.password1 = adjust_pw(offset//2,user.password1)  
-    user.password2 = user.password1
-    
-    data={
-        "username": user.username,
-        "password1": user.password1,
-        "password2": user.password2,
-        "first_name": user.first,
-        "last_name": user.last,
-        "email": user.email,
-        "next/": "shop/1/",
-    }
-
-    headers={
-        "Referer": f"{client.base_url}/signup/"
-    }
-
-    try:
-        response = await client.post("signup/",data=data,headers=headers,follow_redirects=True)
-    except RequestError as exc:    
-        raise MumbleException("Error while registering user")
-    
-    assert_equals(response.status_code, 200, "Registration failed")
-    #await db.set(kwargs['chain_id']+"_user",{'username':user.username,'password':user.password1})
-    return data
-"""

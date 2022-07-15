@@ -22,6 +22,7 @@ from enochecker3 import(
 
     #HAVOC-Message-Tasks
     HavocCheckerTaskMessage,
+    ExploitCheckerTaskMessage,
 )
 
 from enochecker3.utils import FlagSearcher, assert_equals, assert_in
@@ -54,12 +55,12 @@ async def putflag_license(task: PutflagCheckerTaskMessage, client: AsyncClient, 
     logger.debug(f"Time - putflag_license (create_ShopItem) {d2.total_seconds()} s")
     shop_listing_kwargs = {
         'item_id': item_id,
-        'item_price': 2147483646,
+        'item_price': random.randint(1825361100,2147483646),
         'description': html.escape(gen.sentence()),
         'username': user['username'],
         'password': user['password1'],
     }
-    logger.debug(f"ID={task.task_chain_id} PUTFLAG_LICENSE: username:{user['username']} , password: {user['password1']} , item_name: {item_name}")
+    logger.debug(f"PUTFLAG_LICENSE: username:{user['username']} , password: {user['password1']} , item_name: {item_name}")
     listing_id = await create_ShopListing(client=client,logger=logger,db=db,kwargs=shop_listing_kwargs)
     t4 = datetime.now()
     d3 = t4-t3
@@ -68,14 +69,13 @@ async def putflag_license(task: PutflagCheckerTaskMessage, client: AsyncClient, 
     t5 = datetime.now()
     d4 = t5-t4
     logger.debug(f"Time - putflag_license (logout_user) {d4.total_seconds()} s")
-    await db.set("flag", task.flag)
     await db.set("item_id", item_id)
     await db.set("user", {'user':user['username'],'password':user['password1']})
     t6 = datetime.now()
     d5 = t6-t5
     logger.debug(f"Time - putflag_license (create_ShopListing) {d5.total_seconds()} s")
     logger.debug(f"PUTFLAG_LICENSE - Total time {(t6-t1).total_seconds()} s")
-    return json.dumps({'item_id':item_id})
+    return json.dumps({'listing_id':listing_id})
 
 
 @checker.getflag(0)
@@ -85,13 +85,6 @@ async def getflag_license(task: GetflagCheckerTaskMessage, client: AsyncClient, 
         user = await db.get("user")
     except KeyError:
         raise MumbleException("Could not retrieve USER from ChainDB!")
-
-    try:
-        flag = await db.get("flag")
-    except KeyError:
-        raise MumbleException("Could not retrieve FLAG from ChainDB!")
-    if flag != task.flag:
-        raise MumbleException(f"Flags with task_chain_id={task.task_chain_id} are different (DB and task)!")
 
     try:
         item_id = await db.get("item_id")
@@ -271,38 +264,13 @@ async def havoc_default_user_params(task: HavocCheckerTaskMessage, client: Async
     logger.debug(f"HAVOC_USER_PARAMS - Total time {(t1-t0).total_seconds()} s")
 
 @checker.exploit(0)
-async def exploit_license(searcher: FlagSearcher, client: AsyncClient, logger: LoggerAdapter) -> None:
+async def exploit_license(task: ExploitCheckerTaskMessage, searcher: FlagSearcher, client: AsyncClient, logger: LoggerAdapter) -> None:
     user1 = await register_user(client=client,logger=logger,db=None,chain_id=None)
-    min_price = 1825361099
-    cnt = 1
-    item_name =""
-    while True:
-        item_cost = 0
-        try:
-            response = await client.get(f"/shop/{1}/",follow_redirects=False)
-        except RequestError:
-            raise MumbleException("EXPLOIT - cannot request endpoint!")
-        data = BeautifulSoup(response,"html.parser")
-
-        links = data.find_all('a')
-        links = [link for link in links if "viewable-" in str(link)]
-        links = [str(link).split('"')[1] for link in links]
-        for link in links:
-            try:
-                response = await client.get(f"{link}",follow_redirects=False)
-            except RequestError:
-                raise MumbleException("EXPLOIT - cannot request endpoint!")
-            data = BeautifulSoup(response,"html.parser")
-            tables = data.find_all('tbody')
-            item_cost = int(str(tables[0]).split("\n")[8][4:-5])
-            if item_cost >= min_price:
-                name = data.find_all('h3')
-                item_name = str(name[0])[32:-5]   
-                break
-        cnt += 1
-        if item_cost >= min_price:
-                break
-    exploit_name = await make_item_name_exploitable(item_name)
+    attack_info = ""
+    if task.attack_info['listing_id']:
+        attack_info =  task.attack_info['listing_id']
+   
+    exploit_name = "" #await make_item_name_exploitable(item_name)
     shop_item_kwargs =  {
         'data_path': '/frog.png',
         'item_name': html.escape(exploit_name),
