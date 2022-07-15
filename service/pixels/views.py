@@ -238,7 +238,7 @@ def license_access(request, item_id):
         if user == item.user:
             response = FileResponse(item.cert_license)
             return response
-        query = f"SELECT * FROM pixels_buyers WHERE item_id = {item.pk} AND user_id = {request.session['auth']}"
+        query = f"SELECT * FROM pixels_buyers WHERE item_id = {item.pk} AND user_id = {request.session['user_id']}"
         buyers = Buyers.objects.raw(query)
         if len(buyers) > 0:
             access_granted = True  
