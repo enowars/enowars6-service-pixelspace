@@ -12,7 +12,7 @@ There are {{shop_items|length}} objects in the shop:
 <br>
 {% for s in shop_items %}
    
-    <td><a id="viewable-s.item.pk" href="{%url 'itemPage' item_id=s.item.pk%}">View item</a></td><br>
+    <td><a id="viewable-s.item.pk" href="{%url 'itemPage' item_id=s.pk%}">View item</a></td><br>
     <br>
 {% endfor %}
 
