@@ -91,6 +91,7 @@ async def getflag_license(task: GetflagCheckerTaskMessage, client: AsyncClient, 
 
     try:
         item_id = await db.get("item_id")
+        listing_id = await db.get("listing_id")
     except KeyError:
         raise MumbleException("Could not retrieve ITEM_NAME from ChainDB!")    
 
@@ -104,6 +105,11 @@ async def getflag_license(task: GetflagCheckerTaskMessage, client: AsyncClient, 
         response = await client.get(f'user_items/{item_id}/',follow_redirects=True)
     except RequestError:
         raise MumbleException("GETFLAG_LICENSE  - Item didnt got created!")
+    try:
+        logger.debug(f"REQUESTURL: {client.base_url} shop/item/{listing_id}/")
+        response = await client.get(f'shop/item/{listing_id}/',follow_redirects=True)
+    except RequestError:
+        raise MumbleException("GETFLAG_LICENSE  - Item is not enlisted!")
   
     try:
         logger.debug(f"REQUESTURL: {client.base_url} user_items/license/{item_id}/")
@@ -145,6 +151,7 @@ async def put_noise_base_functions(task: PutnoiseCheckerTaskMessage, client: Asy
     listing_id = await create_ShopListing(client=client,logger=logger,db=db,kwargs=shop_listing_kwargs)
     await logout_user(client=client,logger=logger,db=db,kwargs={'logged_in':True})
     await db.set("item_id", item_id)
+    await db.set("listing_id",listing_id)
     await db.set("user", {'user':user['username'],'password':user['password1']})
     t1= datetime.now()
     logger.debug(f"PUT_NOISE_BASE - Total time {(t1-t0).total_seconds()} s")
@@ -156,9 +163,10 @@ async def get_noise_base_functions(task: GetnoiseCheckerTaskMessage, client: Asy
     try: 
         user = await db.get("user")
         item_id = await db.get("item_id")
+        listing_id = await db.get("listing_id")
     except KeyError:
         raise MumbleException("Could not retrieve data from ChainDB!")
-    
+   
     login_kwargs={
         'username': user['user'],
         'password': user['password'],
@@ -171,6 +179,13 @@ async def get_noise_base_functions(task: GetnoiseCheckerTaskMessage, client: Asy
         response = await client.get(f'user_items/{item_id}/',follow_redirects=True)
     except RequestError:
         raise MumbleException("GET_NOISE_BASE_FUNCTIONS - Error while requesting item from user_items!")
+
+    try:
+        logger.debug(f"REQUESTURL: {client.base_url} shop/item/{listing_id}/")
+        response = await client.get(f'shop/item/{listing_id}/',follow_redirects=True)
+    except RequestError:
+        raise MumbleException("GET_NOISE_BASE_FUNCTIONS  - Item is not enlisted!")
+  
     await logout_user(client=client,logger=logger,db=db,kwargs={'logged_in':True})
     t1 = datetime.now()
     logger.debug(f"GET_NOISE_BASE - Total time {(t1-t0).total_seconds()} s")
