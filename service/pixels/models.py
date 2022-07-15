@@ -20,7 +20,7 @@ class ShopItem(models.Model):
 
 class ShopListing(models.Model):
     item = models.OneToOneField(ShopItem, on_delete=models.CASCADE)
-    price = models.IntegerField(validators=[MinValueValidator(1),MaxValueValidator(10000000000000)])
+    price = models.IntegerField(validators=[MinValueValidator(1),MaxValueValidator(2147483646)])
     description = models.CharField(max_length=300)
     sold = models.IntegerField(validators=[MinValueValidator(0)],default=0)
 
