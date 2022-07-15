@@ -195,6 +195,8 @@ def purchase(request,item_id):
     
 
 def item_page(request,item_id):
+
+
     return render(request, 'item_details.html', {'item': ShopItem.objects.get(id=item_id)})
 
 
