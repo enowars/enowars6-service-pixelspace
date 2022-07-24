@@ -3,10 +3,10 @@
 1. What is Pixelspace?
 2. Architecture
 3. Vulnerability (Unicode Case Collision)
-3.1. Collisions
-3.2. Code
-3.3. Exploit
-3.4. Fix
+ 3.1. Collisions
+ 3.2. Code
+ 3.3. Exploit
+ 3.4. Fix
 5. Further Information
 
 ## What is Pixelspace?
@@ -29,6 +29,13 @@ A unicode-case (mapping) collision appears when unicode and utf-8 encoded data i
 ### Collisions
 The previously mentioned conditions on the vulnerability limit the *useable* collisions to a few characters. A list of the characters used within the *checker* can be found below:
 
+| Original character | unicode character | unicode character \(int\) |
+|:------------------:|:-----------------:|:-------------------------:|
+| i                  | ı                 | 305                       |
+| s                  | ſ                 | 383                       |
+| ss                 | ß                 | 223                       |
+| m                  | µ                 | 181                       |
+
 
 
 ### Code
@@ -49,7 +56,14 @@ def set_buyer(user: User, name: str) -> bool:
 ### Exploit
 A working, coded exploit can be found within the `checker.py`. Therefore, a description about the exploit procedure will be given here.
 
-1. 
+1. Create an account via the `signup` endpoint (from now on *exploit-provider*).
+2. Search for an item to exploit which contains one of the characters from the list above (this is not case-sensitive).
+3. Create a `shopItem` with the *exploit-provider*-account which has a similar name to the item from step 2, but contains a unicode-character. (Example)
+4. Enlist the created `shopItem` in the shop.This will create a `shopListing`-object. The `shoplisting.price` needs to be smaller or equal to 100.
+5. Create a second account via the `signup` endpoint (from now on *exploitee*).
+6. Search for and buy the `shopListing` created in step 4.
+7. Find the original item (step 2) within the `user_items` endpoint and view its license from the `/user_items/license/<item_id>` endpoint. The license will contain the flag.
+
 
 ### Fix
 
