@@ -10,17 +10,17 @@ from pixels.forms import SignupForm
 from django.db.models.query import RawQuerySet
 
 
-def check_item_name_exists(name: str) -> bool:
-    query = f"SELECT * FROM pixels_shopitem WHERE name = '{name}'"
 
-    items = ShopItem.objects.raw(query)    
+def check_item_name_exists(name: str) -> bool:
+
+    items = ShopItem.objects.raw('SELECT * FROM pixels_shopitem WHERE lower(name) = %s',[name.lower()])    
     if len(items) == 0:
         return False
     return True
     
 
 def set_buyer(user: User, name: str) -> bool:
-    item = ShopItem.objects.raw(f"Select * FROM pixels_shopitem WHERE UPPER(name) = '{name.upper()}'")[0]
+    item = ShopItem.objects.raw('SELECT * FROM pixels_shopitem WHERE upper(name) = %s',[name.upper()])[0]
     buyer = Buyers.objects.create(
                 user = user,
                 item=item,

@@ -88,8 +88,7 @@ def shop(request,page_num):
     if page_num == 0:
         prev_page = None
 
-    query = f"SELECT * FROM pixels_shoplisting ORDER BY id ASC OFFSET {(page_num -1) *5} ROW FETCH NEXT 5 ROWS ONLY"
-    items = ShopListing.objects.raw(query)
+    items = ShopListing.objects.raw('SELECT * FROM pixels_shoplisting ORDER BY id ASC OFFSET %s ROW FETCH NEXT 5 ROWS ONLY',[((page_num -1) *5)])
 
     if len(items) < 5:
         next_page = None
@@ -101,8 +100,7 @@ def item(request,item_id):
     content_dict = {}
     content_dict['item'] = ShopListing.objects.get(pk=item_id)
     
-    query = f"SELECT * FROM pixels_comment WHERE item_id = {item_id}"
-    content_dict['reviews'] = Comment.objects.raw(query)
+    content_dict['reviews'] = Comment.objects.raw('SELECT * FROM pixels_comment WHERE item_id = %s',[item_id])
     num_revs = len(content_dict['reviews'])
     for r in content_dict['reviews']:
         avg_rating += r.stars
@@ -167,10 +165,9 @@ def create_listing(request,item_id):
 
 
 def purchase(request,item_id):
-    item = ShopListing.objects.raw(f"SELECT * FROM pixels_shoplisting WHERE id = {item_id}")[0]
+    item = ShopListing.objects.raw('SELECT * FROM pixels_shoplisting WHERE id = %s',[item_id])[0]
     buyer = request.user
-    query = f"SELECT * FROM pixels_buyers WHERE user_id = {request.session['user_id']} AND item_id = {item_id}"
-    buyers = Buyers.objects.raw(query)
+    buyers = Buyers.objects.raw('SELECT * FROM pixels_buyers WHERE user_id = %s AND item_id = %s',[request.session['user_id'],item_id])
     if len(buyers) > 0:
         messages.error(request,'You already purchased this item!')
         return redirect('items')
@@ -207,7 +204,7 @@ def review(request,item_id):
         if form.is_valid():
             com = form.save(commit=False)
             reception = Comment.objects.create(
-                item = ShopListing.objects.raw(f"SELECT * FROM pixels_shoplisting WHERE item_id = {item_id}")[0],
+                item = ShopListing.objects.raw('SELECT * FROM pixels_shoplisting WHERE item_id = %s',[item_id])[0],
                 user = request.user,
                 content =  com.content,
                 stars = com.stars,
@@ -241,8 +238,7 @@ def license_access(request, item_id):
         if user == item.user:
             response = FileResponse(item.cert_license)
             return response
-        query = f"SELECT * FROM pixels_buyers WHERE item_id = {item.pk} AND user_id = {request.session['auth']}"
-        buyers = Buyers.objects.raw(query)
+        buyers = Buyers.objects.raw('SELECT * FROM pixels_buyers WHERE item_id = %s AND user_id = %s',[item.pk,request.session['user_id']])
         if len(buyers) > 0:
             access_granted = True  
     if access_granted:

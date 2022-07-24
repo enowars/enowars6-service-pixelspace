@@ -36,7 +36,7 @@
       </ul>
     </div>
     {% if request.session.auth %}
-    <span class="status-msg">Hello, {{request.session.username }}</span>
+    <span class="status-msg">Hello, {{request.session.user_name }}</span>
     <span class="status-msg">Credits: {{request.session.balance }}</span>
     <span><a class="status-msg" href="{% url 'logout' %}">Logout</a></span>
     {% else %}
