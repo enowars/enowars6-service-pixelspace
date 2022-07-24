@@ -1,12 +1,6 @@
-from pixels.models import Buyers, ShopItem, ShopListing,User
-from django.contrib.auth.signals import user_login_failed
-from django.core.exceptions import PermissionDenied, ImproperlyConfigured
-from django.utils.module_loading import import_string
-from django.conf import settings
-
+from pixels.models import Buyers, ShopItem,User
 from datetime import datetime
 from django.db import connection
-from pixels.forms import SignupForm
 from django.db.models.query import RawQuerySet
 
 

@@ -1,26 +1,13 @@
 from django.shortcuts import render,redirect
-from django.http import HttpResponse,HttpResponseRedirect
-from django.urls import reverse
 from django.http.response import FileResponse
-# Create your views here.
-from django.contrib.auth import get_user_model
 from django.contrib.auth import login, authenticate, logout
-from django.contrib.auth.decorators import user_passes_test
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
-from django.contrib.auth.models import Permission
+from django.contrib.auth.forms import AuthenticationForm
 from pixels.models import *
 from pixels.forms import *
 from pixels.util import *
-from django.conf import settings
 from django.contrib import messages
-from django.db import transaction
-from django.urls import reverse
 from django.contrib.auth.models import User
-from datetime import timedelta
-from django.utils import timezone
-import re
 from django.db import connection
-
 
 
 def logout_page(request):
@@ -46,8 +33,6 @@ def login_page(request):
                 request.session['auth'] = True
                 return redirect('items')
         else:
-            # If there were errors, we render the form with these
-            # errors
             return render(request, 'login.html', {'form': form}) 
    
     return render(request,'login.html',{'form':form})
@@ -155,8 +140,7 @@ def create_listing(request,item_id):
     if request.method == 'POST':
         form = ShopListingForm(request.POST,request.FILES,request.user)
         if form.is_valid():
-            listing_id,item_name = db_create_listing(form,item_id)
-            #print(f"CREATED LISTING for item: {listing_id}")
+            listing_id,_ = db_create_listing(form,item_id)
             messages.success(request,f"Successfully created listing with id: {listing_id}")
             return redirect("itemPage",item_id=listing_id)
     else:
@@ -185,7 +169,6 @@ def purchase(request,item_id):
         buyer.profile.save()
         set_buyer(buyer,item.item.name)
         item.sold +=1
-        #print(f"USER: {request.user} bought item: {item.item.name}")
         messages.success(request,f"Successfully bought item: {item.item.name} ({item.item.pk})")
         item.save()
     else:
