@@ -63,7 +63,8 @@ A working, coded exploit can be found within the `checker.py`. Therefore, a desc
 
 1. Create an account via the `signup` endpoint (from now on *exploit-provider*).
 2. Search for an item to exploit which contains one of the characters from the table above (this is not case-sensitive).
-3. Create a `shopItem` with the *exploit-provider*-account which has a similar name to the item from step 2, but contains a unicode-character. (Example)
+3. Create a `shopItem` with the *exploit-provider*-account which has a similar name to the item from step 2, but contains a unicode-character. 
+    Example: If the item selected in step 2 is "Material", the name for the exploit would be "Materıal" 
 4. Enlist the created `shopItem` in the shop. This will create a `shopListing`-object. The `shopListing.price` needs to be smaller than or equal to 100.
 5. Create a second account via the `signup` endpoint (from now on *exploitee*).
 6. Search for and buy the `shopListing` created in step 4.
@@ -81,4 +82,60 @@ Furthermore, it would be possible to write a validator function that fails whene
 
 ## Vulnerability (Race Condition)
 
-Fixing the unicode-case (mapping) collision will provide a valid fix 
+Fixing the unicode-case (mapping) collision will provide a valid fix when load is low and response times are fast.
+
+### Code
+When the load on the services increases a race condition presents itself, which is caused by the following code:
+
+```python:
+def purchase(request,item_id):
+    item = ShopListing.objects.raw('SELECT * FROM pixels_shoplisting WHERE id = %s',[item_id])[0]
+    buyer = request.user
+    buyers = Buyers.objects.raw('SELECT * FROM pixels_buyers WHERE user_id = %s AND item_id = %s',[request.session['user_id'],item_id])
+    if len(buyers) > 0:
+        messages.error(request,'You already purchased this item!')
+        return redirect('items')
+
+    if request.user == item.item.user:
+        messages.error(request,'You cannot buy your own item!')
+        return redirect('shop',page_num=1)
+    balance = buyer.profile.balance
+    if balance >= item.price:
+        item.item.user.profile.balance += item.price
+        item.item.user.profile.save()
+        balance -= item.price
+        request.session['balance'] = balance
+        buyer.profile.balance = balance
+        buyer.profile.save()
+        set_buyer(buyer,item.item.name)
+        item.sold +=1
+        messages.success(request,f"Successfully bought item: {item.item.name} ({item.item.pk})")
+        item.save()
+    else:
+        messages.error(request,'You cannot aford to buy this item!')
+        return redirect('items')
+    return redirect('items')
+```
+### Exploit
+While there is no coded exploit within the repository, the building blocks for the following exploit are already implemented. Therefore, a writeup for the exploit can be found below.
+
+1. Create two accounts via the `signup` endpoint (following named `exploit-seller` and `exploit-buyer`).
+2. Enlist a previously created `shopItem` with a price lower than or equal to 100 under use of the `exploit-seller` account.
+3. Gather the info needed to purchase the new `shopListing` created in step 2.
+4. Send two concurrent request against the purchase endpoint for the specified item (`shop/item/purchase/<item_id>`) with the `exploit-buyer` account.
+5. Since the `exploit-buyer` won't have any balance left, create a new account and repeat the steps above with the price of the `shopListing` being doubled.
+   Here, the `exploit-seller` will become the `exploit-buyer` for the next iteration.
+
+If the race condition is fulfilled the `exploit-seller` will get balance worth two times the price of the item enlisted in step 2. Therefore, the balance of the `exploit-seller` will increase exponentially.
+
+Since the price of all items containing a flag is between $0.85*(2^{31} -2)$ and $2^{31} -2$ a mostly consistent, winning race condition is needed to exploit the service in the way described above.
+
+### Fix
+
+Adding a `select_for_update` statement will take care of the concurrent requests coming in. Therefore, the aforementioned `exploit-buyer` can only purchase the item provided by the `exploit-seller` once and no exponential accumulation of balance will be possible anymore.
+
+```python:
+item = ShopListing.objects.select_for_update().raw('SELECT * FROM pixels_shoplisting WHERE id = %s',[item_id])[0]
+buyer = request.user
+buyers = Buyers.objects.elect_for_update().raw('SELECT * FROM pixels_buyers WHERE user_id = %s AND item_id = %s',[request.session['user_id'],item_id])
+```
