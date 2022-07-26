@@ -1,6 +1,5 @@
 from django.utils import timezone
 from .models import Profile
-import os
 import logging
 import datetime
 

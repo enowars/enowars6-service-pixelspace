@@ -9,8 +9,6 @@ from django.conf import settings
 from datetime import timedelta
 from django.utils import timezone
 
-# Create your models here.
-
 class ShopItem(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     name = models.CharField(max_length=50,db_index=True)
@@ -50,10 +48,3 @@ def create_user_profile(sender, instance, created, **kwargs):
 @receiver(post_save, sender=User)
 def save_user_profile(sender,instance,**kwargs):
     instance.profile.save()
-
-
-
-class Gift(models.Model):
-    code = models.CharField(max_length=50)
-    item = models.ForeignKey(ShopItem, on_delete=models.CASCADE,related_name="gift_item")
-    users = models.ForeignKey(Buyers, on_delete=models.CASCADE,blank=True,null=True,db_index=True,related_name="Receivers")

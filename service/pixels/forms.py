@@ -1,15 +1,14 @@
-from distutils.command.build_scripts import first_line_re
+
 from xml.etree.ElementTree import Comment
 from django import forms
-from pixels.models import ShopListing, ShopItem, Profile, Gift, Comment
+from pixels.models import ShopListing, ShopItem, Profile, Comment
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import password_validation
 from django.contrib.auth.models import User
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.validators import UnicodeUsernameValidator
-from .validators import ContentTypeRestrictedFileField, TextFileExtensionValidator, ImageFileExtensionValidator
-
+from .validators import  TextFileExtensionValidator, ImageFileExtensionValidator
 
 class ShopItemForm(forms.ModelForm):
     name = forms.CharField(
@@ -77,20 +76,6 @@ class NoteForm(forms.ModelForm):
     class Meta:
         model = Profile
         fields = ['notes']
-
-class GiftReceiveForm(forms.ModelForm):
-    class Meta:
-        model = Gift
-        fields = ['code']
-
-class GiftCreationForm(forms.ModelForm):
-
-    class Meta:
-        model = Gift
-        fields = ['code','item']
-
-    
-
 
 class CommentForm(forms.ModelForm):
     class Meta:
