@@ -83,7 +83,7 @@ def set_buyer(user: User, name: str) -> bool:
 
 
 ### 3.3 Exploit
-A working, coded exploit can be found within the `checker.py`. Therefore, a description about the exploit procedure will be given here:
+A working coded exploit can be found within the `checker.py`. Therefore, a description about the exploit procedure will be given here:
 
 1. Create an account via the `signup` endpoint (from now on *exploit-provider*).
 2. Search for an item to exploit which contains one of the characters from the table above (this is not case-sensitive).
@@ -109,7 +109,7 @@ Furthermore, it would be possible to write a validator function that fails whene
 Fixing the unicode-case (mapping) collision will provide a valid fix when load is low and response times are fast.
 
 ### 4.1 Code
-When the load on the services increases a race condition presents itself, which is caused by the following code:
+When the load on the service increases, a race condition presents itself, which is caused by the following code:
 
 ```python:
 def purchase(request,item_id):
@@ -144,15 +144,15 @@ def purchase(request,item_id):
 While there is no coded exploit within the repository, the building blocks for the following exploit are already implemented. Therefore, a writeup for the exploit can be found below.
 
 1. Create two accounts via the `signup` endpoint (following named `exploit-seller` and `exploit-buyer`).
-2. Enlist a previously created `shopItem` with a price lower than or equal to 100 under use of the `exploit-seller` account.
-3. Gather the info needed to purchase the new `shopListing` created in step 2.
+2. Enlist a previously created `shopItem` with a price lower than or equal to 100 using the `exploit-seller` account.
+3. Gather the information needed to purchase the new `shopListing` created in step 2.
 4. Send two concurrent request against the purchase endpoint for the specified item (`shop/item/purchase/<item_id>`) with the `exploit-buyer` account.
-5. Since the `exploit-buyer` won't have any balance left, create a new account and repeat the steps above with the price of the `shopListing` being doubled.
+5. Since the `exploit-buyer` will not have any balance left, create a new account and repeat the steps above with the price of the `shopListing` being doubled.
    Here, the `exploit-seller` will become the `exploit-buyer` for the next iteration.
 
-If the race condition is fulfilled the `exploit-seller` will get balance worth two times the price of the item enlisted in step 2. Therefore, the balance of the `exploit-seller` will increase exponentially.
+If the race condition is fulfilled, the `exploit-seller` will get balance worth two times the price of the item enlisted in step 2. Therefore, the balance of the `exploit-seller` will increase exponentially.
 
-Since the price of all items containing a flag is between $0.85*(2^{31} -2)$ and $2^{31} -2$ a mostly consistent, winning race condition is needed to exploit the service in the way described above.
+Since the price of all items containing a flag is between $0.85*(2^{31} -2)$ and $2^{31} -2$, a consitently winning the race condition is needed to exploit the service in the way described above.
 
 ### 4.3 Fix
 
@@ -164,4 +164,4 @@ buyer = request.user
 buyers = Buyers.objects.elect_for_update().raw('SELECT * FROM pixels_buyers WHERE user_id = %s AND item_id = %s',[request.session['user_id'],item_id])
 ```
 
-Obviously a user could still create an arbitrary amount of accounts and "feed" a single user to gain the amount of balance required to purchase an item containing a flag within its lisence, but this approach would approximatly need 21.478 million accounts to be registered, with each account purchasing the same item with the maximum price of 100 and therefore, is not a real exploit anymore, since this would lead to a DoS as a flag is only valid for a limited amount of time. I.e. if a flag is valid for 10 minutes, the user would need to register around 35800 accounts per second and purchase the item of her "main" user 21.478 million times which equates to approximatly 64.44 million requests.
+Obviously, a user could still create an arbitrary amount of accounts and "feed" a single user to gain the amount of balance required to purchase an item containing a flag within its lisence, but this approach would approximatly need 21.478 million accounts to be registered. Each registered account has to purchase the same item with the maximum price of 100. Therefore, the service is not exploitable anymore, since this would lead to a DoS, as a flag is only valid for a limited amount of time. I.e. if a flag is valid for 10 minutes, the user would need to register around 35800 accounts per second and purchase the item of her "main" user 21.478 million times which equates to approximatly 64.44 million requests.
