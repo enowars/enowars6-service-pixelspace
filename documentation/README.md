@@ -34,7 +34,7 @@ CRONJOBS = [
 
 
 ### 2.2 Models
-The **Pixelspace-Service** uses object models defined in the `models.py`. This chapter will provide a basic overview about the most important object classes used within the **Pixelspace-Service**.
+The **Pixelspace-Service** uses object models defined in the `models.py`. This chapter will provide a basic overview about the object classes used within the **Pixelspace-Service**.
 
 #### Profile
 The `Profile`-model extends Django's default 'User' model from `django.contrib.auth.models`. Each *Pixelspace-User* will have exactly one `Profile` attached to itself. To model this behavior a `OneToOneField` is used. Furthermore, each user will have a `balance` associated with itself defined via the `Profile`. On creation each user will have a balance of 100 by default. Additionally each `Profile` has a `notes` and a `expiration_date` attribute. The notes attribute is used at the `notes` endpoint and serves as an option to write something down for later use. The `expiration_date` defines up from which point in time the aforementioned cronjob is eligible to delete a user on its next cleanup run.
