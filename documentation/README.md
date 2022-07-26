@@ -52,7 +52,7 @@ The `Buyers`-model acts as a container. Each `Buyers`-object has three attribute
 
 #### Comment
 Once a user purchased an item, he or she can leave a review. These reviews can be made via the `user_items/review/<item_id>` and will be visible at the `shop/item/<item_id>` endpoint. The `user` and `item` attribute of the `Comment`-obejct are set identically as in the `Buyers`-model. Furthermore, a review *must*
-contain a rating (`comment.stars`) with an integervalue between 0 and 5. Additionally a review text must be provided with a maximum length of 200 characters. On creation of a `Comment` instance the `date` of creation will be set (again similar to  the `Buyers`-model).
+contain a rating (`comment.stars`) with an integer value between 0 and 5. Additionally a review text must be provided with a maximum length of 200 characters. On creation of a `Comment` instance the `date` of creation will be set (again similar to  the `Buyers`-model).
 
 ## 3. Vulnerability (Unicode Case Collision)
 A unicode-case (mapping) collision appears when unicode and utf-8 encoded data is mixed and not handled properly. This can only occour to single byte characters. 
