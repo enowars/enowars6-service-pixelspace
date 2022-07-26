@@ -1,9 +1,9 @@
 # Pixelspace Documentation
 
-1. What is Pixelspace?
-2. Architecture
-2.1 Setup
-2.2 Models
+#### 1. What is Pixelspace?
+#### 2. Architecture
+##### 2.1 Setup
+##### 2.2 Models
 3. Vulnerability (Unicode Case Collision)
 3.1. Collisions
 3.2. Code
@@ -37,20 +37,20 @@ CRONJOBS = [
 The **Pixelspace-Service** uses object models defined in the `models.py`. This chapter will provide a basic overview about the object classes used within the **Pixelspace-Service**.
 
 #### Profile
-The `Profile`-model extends Django's default 'User' model from `django.contrib.auth.models`. Each *Pixelspace-User* will have exactly one `Profile` attached to itself. To model this behavior a `OneToOneField` is used. Furthermore, each user will have a `balance` associated with itself defined via the `Profile`. On creation each user will have a balance of 100 by default. Additionally each `Profile` has a `notes` and a `expiration_date` attribute. The notes attribute is used at the `notes` endpoint and serves as an option to write something down for later use. The `expiration_date` defines up from which point in time the aforementioned cronjob is eligible to delete a user on its next cleanup run.
+The `Profile`-model extends Django's default 'User' model from `django.contrib.auth.models`. Each *Pixelspace-User* will have exactly one `Profile` attached to itself. To model this behavior a `OneToOneField` is used. Furthermore, each user will have a `balance` associated with itself defined via the `Profile`. On creation each user will have a balance of 100 by default. Additionally, each `Profile` has a `notes` and an `expiration_date` attribute. The `notes` attribute is used at the `notes` endpoint and serves as an option to write down information for later use. The `expiration_date` defines from which point in time the aforementioned cronjob is eligible to delete a user on its next cleanup run.
 
 #### ShopItem
-The `shopItem`-model serves as a private buffer object, before enlisting in the shop of the **Pixelspace-Service**. A user has the ability to create a new `shopItem` through the `new_item` endpoint, when authenticated. Here, the user needs to specify a name and select two upload files: the `license` and `data`. Whilst the `license` has to be a a plain text file format (i.e. txt), the `data`s filetype must be one of the following: jpg, bmp, tga or png. Furthermore, the `license` **and** `data` must be smaller than 1000 bytes in order to be valid.
+The `shopItem`-model serves as a private buffer object, before enlisting in the shop of the **Pixelspace-Service**. A user has the ability to create a new `shopItem` through the `new_item` endpoint, when authenticated. Here, the user needs to specify a name and select two upload files: the `license` and `data`. Whilst the `license` has to be a plain text file format (i.e. txt), the `data`s filetype must be one of the following: jpg, bmp, tga or png. Furthermore, the `license` **and** `data` must be smaller than 1000 bytes in order to be valid.
 
 #### ShopListing
 Since the `shopItem`-model is only privately accessible, the `shopListing`-model serves as its public counterpart. A user can enlist each of her previously created `shopitem`s exactly once. Therefore, a `description` and the `price` have to be defined. This can be accessed via the `user_items/enlist/<item_id>` endpoint.
     
 #### Buyers
-The `Buyers`-model acts as a container. Each `Buyers`-object has three attributes, namely: `user`, `item`, `data`. When a user decides to purchase an item a new `Buyers`-object is created. Obviously the `user` will be filled with a reference to the user that bought the specified item, while the `item` will be filled with a reference to the `shopItem` referenced via the `shopListing.item` attribute of the purchased item. The `date` will be filled with the date information of the point in time the purchase was made. The creation of a `Buyers` instance can be found in chapter **3.2** .
+The `Buyers`-model acts as a container. Each `Buyers`-object has three attributes, namely: `user`, `item` and `data`. When a user decides to purchase an item a new `Buyers`-object is created. Obviously, the `user` will be filled with a reference to the user that bought the specified item, while the `item` will be filled with a reference to the `shopItem` referenced via the `shopListing.item` attribute of the purchased item. The `date` will be filled with the date information of the point in time the purchase was made. The creation of a `Buyers` instance can be found in chapter **3.2** .
 
 #### Comment
-Once a user purchased an item, he or she can leave a review. These reviews can be made via the `user_items/review/<item_id>` and will be visible at the `shop/item/<item_id>` endpoint. The `user` and `item` attribute of the `Comment`-obejct are set identically as in the `Buyers`-model. Furthermore, a review *must*
-contain a rating (`comment.stars`) with an integer value between 0 and 5. Additionally a review text must be provided with a maximum length of 200 characters. On creation of a `Comment` instance the `date` of creation will be set (again similar to  the `Buyers`-model).
+Once a user purchased an item, she can leave a review. These reviews can be made via the `user_items/review/<item_id>` and will be visible at the `shop/item/<item_id>` endpoint. The `user` and `item` attribute of the `Comment`-obejct are set identically to the `Buyers`-model. Furthermore, a review *must*
+contain a rating (`comment.stars`) with an integer value between 0 and 5. Additionally, a review text must be provided with a maximum length of 200 characters. On creation of a `Comment` instance, the `date` of creation will be set (again similar to  the `Buyers`-model).
 
 ## 3. Vulnerability (Unicode Case Collision)
 A unicode-case (mapping) collision appears when unicode and utf-8 encoded data is mixed and not handled properly. This can only occour to single byte characters. 
