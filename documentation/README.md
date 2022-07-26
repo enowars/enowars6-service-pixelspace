@@ -4,7 +4,6 @@
 2. Architecture
 2.1 Setup
 2.2 Models
-2.3 Further information
 3. Vulnerability (Unicode Case Collision)
 3.1. Collisions
 3.2. Code
@@ -14,7 +13,6 @@
 4.1 Code
 4.2 Exploit
 4.3 Fix
-5. Further Information
 
 ## 1. What is Pixelspace?
 Pixelspace is a microservice designed for Enowars 6. The basic functionality of this Pixelspace is buying and selling images with their corresponding license in the shop of the service. Furthermore, users can take and display private notes, as well as write and look at written reviews on the items that can be bought within the shop.
