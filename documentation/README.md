@@ -163,3 +163,5 @@ item = ShopListing.objects.select_for_update().raw('SELECT * FROM pixels_shoplis
 buyer = request.user
 buyers = Buyers.objects.elect_for_update().raw('SELECT * FROM pixels_buyers WHERE user_id = %s AND item_id = %s',[request.session['user_id'],item_id])
 ```
+
+Obviously a user could still create an arbitrary amount of accounts and "feed" a single user to gain the amount of balance required to purchase an item containing a flag within its lisence, but this approach would approximatly need 21.478 million accounts to be registered, with each account purchasing the same item with the maximum price of 100 and therefore, is not a real exploit anymore, since this would lead to a DoS as a flag is only valid for a limited amount of time. I.e. if a flag is valid for 10 minutes, the user would need to register around 35800 accounts per second and purchase the item of her "main" user 21.478 million times which equates to approximatly 44 million requests.
