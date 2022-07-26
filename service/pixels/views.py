@@ -31,7 +31,7 @@ def login_page(request):
                 request.session['balance'] = user.profile.balance
                 request.session['user_id'] = user.id
                 request.session['auth'] = True
-                return redirect('items')
+                return redirect('index')
         else:
             return render(request, 'login.html', {'form': form}) 
    
@@ -57,7 +57,7 @@ def signup(request):
             request.session['balance'] = user.profile.balance
             request.session['user_id'] = user.id
             request.session['auth'] = True
-            return redirect('items',)
+            return redirect('index',)
         else:
             errors = "ERROR 406 - Not Acceptable\n" + form.errors.as_text()
             messages.error(request,errors)
@@ -112,7 +112,7 @@ def create_item(request):
                 return redirect('createItem')    
             item_id, item_name = db_create_item(form=form,user=request.user)
             messages.success(request,f"Successfully created item with id: {item_id}")
-            return redirect(f"../user_items/{item_id}")
+            return redirect(f"itemDetails",item_id = item_id)
     else:
         form = ShopItemForm()
     return render(request, 'new_item.html',{'form':form})
@@ -122,7 +122,6 @@ def user_items(request):
     content_dict['user_items'] = ShopItem.objects.filter(user=request.user)
     content_dict['user_listings'] = ShopListing.objects.filter(item__user=request.user)
     content_dict['user_bought'] = Buyers.objects.filter(user=request.user)
-    
 
 
     return render(request,'user_items.html',content_dict)
@@ -140,7 +139,7 @@ def create_listing(request,item_id):
     if request.method == 'POST':
         form = ShopListingForm(request.POST,request.FILES,request.user)
         if form.is_valid():
-            listing_id,_ = db_create_listing(form,item_id)
+            listing_id,item_name = db_create_listing(form,item_id)
             messages.success(request,f"Successfully created listing with id: {listing_id}")
             return redirect("itemPage",item_id=listing_id)
     else:
@@ -154,7 +153,7 @@ def purchase(request,item_id):
     buyers = Buyers.objects.raw('SELECT * FROM pixels_buyers WHERE user_id = %s AND item_id = %s',[request.session['user_id'],item_id])
     if len(buyers) > 0:
         messages.error(request,'You already purchased this item!')
-        return redirect('items')
+        return redirect('index')
 
     if request.user == item.item.user:
         messages.error(request,'You cannot buy your own item!')
@@ -173,11 +172,13 @@ def purchase(request,item_id):
         item.save()
     else:
         messages.error(request,'You cannot aford to buy this item!')
-        return redirect('items')
-    return redirect('items')
+        return redirect('index')
+    return redirect('index')
     
 
 def item_page(request,item_id):
+
+
     return render(request, 'item_details.html', {'item': ShopItem.objects.get(id=item_id)})
 
 
@@ -198,8 +199,6 @@ def review(request,item_id):
     else:
         form = CommentForm()
     return render(request,'review.html',{'form': form})
-
-
 
 def take_notes(request):
     if request.method == 'POST':
@@ -229,5 +228,5 @@ def license_access(request, item_id):
         return response
     else:
         messages.error(request,'You are not allowed to view this content!')
-        return redirect('items')
+        return redirect('index')
     

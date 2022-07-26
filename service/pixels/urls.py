@@ -19,10 +19,10 @@ urlpatterns = [
 
     #user
     path('user_items/',views.user_items,name='items'),
-    path('user_items/<int:item_id>',views.item_page,name='itemDetails'),
-    path('user_items/enlist/<int:item_id>',views.create_listing,name='listing'),
-    path('user_items/review/<int:item_id>',views.review,name='review'),
-    path('user_items/license/<int:item_id>',views.license_access,name='uploaded_files'),
+    path('user_items/<int:item_id>/',views.item_page,name='itemDetails'),
+    path('user_items/enlist/<int:item_id>/',views.create_listing,name='listing'),
+    path('user_items/review/<int:item_id>/',views.review,name='review'),
+    path('user_items/license/<int:item_id>/',views.license_access,name='uploaded_files'),
     path('new_item/',views.create_item,name='createItem'),
 
     #util

